@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="fade-in">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-plus-circle me-2"></i>Add New Child Profile</h2>
+    <div class="text-muted">
+      <i class="fas fa-user-circle me-2"></i>{{ current_user.username }}
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <form method="POST" action="{{ url_for('add_child_profile') }}">
+        <div class="mb-3">
+          <label for="name" class="form-label">Child Name</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-child"></i>
+            </span>
+            <input type="text" class="form-control" id="name" name="name" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="age" class="form-label">Age</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-birthday-cake"></i>
+            </span>
+            <input type="number" class="form-control" id="age" name="age" min="0" max="18" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="health_status" class="form-label">Health Status</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-heartbeat"></i>
+            </span>
+            <select class="form-select" id="health_status" name="health_status" required>
+              <option value="Healthy">Healthy</option>
+              <option value="Stable">Stable</option>
+              <option value="Under Observation">Under Observation</option>
+              <option value="Needs Attention">Needs Attention</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="priority" class="form-label">Priority</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-flag"></i>
+            </span>
+            <select class="form-select" id="priority" name="priority" required>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="notes" class="form-label">Notes</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-sticky-note"></i>
+            </span>
+            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <a href="{{ url_for('child_care') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-2"></i>Save Child Profile
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %} 

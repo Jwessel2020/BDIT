@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+  <div class="col">
+    <h1 class="mb-4">Unified Map</h1>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col">
+    <div class="card">
+      <div class="card-header">Map Layers</div>
+      <div class="card-body">
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="toggleFundRoutes" checked>
+          <label class="form-check-label" for="toggleFundRoutes">Fund Routes</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="toggleResourceRoutes" checked>
+          <label class="form-check-label" for="toggleResourceRoutes">Resource Routes</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="toggleChildLocations" checked>
+          <label class="form-check-label" for="toggleChildLocations">Child Locations</label>
+        </div>
+        <!-- New toggles -->
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="toggleDonationRoutes" checked>
+          <label class="form-check-label" for="toggleDonationRoutes">Donation Routes</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="toggleDonationHeatmap" checked>
+          <label class="form-check-label" for="toggleDonationHeatmap">Donation Heatmap</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="toggleFieldAgents" checked>
+          <label class="form-check-label" for="toggleFieldAgents">Field Agents</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col">
+    <div class="card">
+      <div class="card-header">Map</div>
+      <div class="card-body p-0" style="height: 600px;">
+        <div id="map" style="width: 100%; height: 100%;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet.heat plugin for donation heatmap -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+
+<script>
+  // Initialize the map centered over South Africa
+  var map = L.map('map').setView([-30, 25], 5);
+
+  // Add OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Layer groups
+  var fundRoutesLayer = L.layerGroup().addTo(map);
+  var resourceRoutesLayer = L.layerGroup().addTo(map);
+  var childLocationsLayer = L.layerGroup().addTo(map);
+  var donationRoutesLayer = L.layerGroup().addTo(map);
+  var fieldAgentsLayer = L.layerGroup().addTo(map);
+
+  // Donation Heatmap = specialized heat layer
+  var donationHeatmapLayer = L.heatLayer([], {
+    radius: 25,
+    blur: 15,
+    maxZoom: 10
+  }).addTo(map);
+
+  // 1) Fund tracing
+  var fundTracing = {{ fund_tracing | tojson }};
+  var fundOrigin = [fundTracing.origin.lat, fundTracing.origin.lon];
+  var fundDestination = [fundTracing.destination.lat, fundTracing.destination.lon];
+  var fundPolyline = L.polyline([fundOrigin, fundDestination], {color: 'green', weight: 4})
+      .bindPopup("Fund Tracing Route: " + fundTracing.origin.name + " → " + fundTracing.destination.name);
+  fundRoutesLayer.addLayer(fundPolyline);
+
+  // 2) Resource routes
+  var resourceRoutes = {{ resource_routes | tojson }};
+  resourceRoutes.forEach(function(route) {
+    var origin = [route.origin.lat, route.origin.lon];
+    var destination = [route.destination.lat, route.destination.lon];
+    var color;
+    switch(route.resource_type) {
+      case "Medical":
+        color = "red"; break;
+      case "Food":
+        color = "orange"; break;
+      case "Shelter":
+        color = "blue"; break;
+      default:
+        color = "gray";
+    }
+    var polyline = L.polyline([origin, destination], {color: color, weight: 4})
+        .bindPopup("Resource Route (" + route.resource_type + ")");
+    resourceRoutesLayer.addLayer(polyline);
+  });
+
+  // 3) Child locations
+  var childLocations = {{ child_locations | tojson }};
+  childLocations.forEach(function(child) {
+    var marker = L.marker([child.lat, child.lon])
+        .bindPopup("Child Location: " + child.name);
+    childLocationsLayer.addLayer(marker);
+  });
+
+  // 4) Donation routes
+  var donationRoutes = {{ donation_routes | tojson }};
+  donationRoutes.forEach(function(route) {
+    var origin = [route.origin.lat, route.origin.lon];
+    var destination = [route.destination.lat, route.destination.lon];
+    L.polyline([origin, destination], {color: 'purple', weight: 3})
+      .bindPopup("Donation: $" + route.donation_size + " for " + route.donation_need)
+      .addTo(donationRoutesLayer);
+  });
+
+  // 5) Donation heatmap
+  var heatData = {{ heat_data | tojson }};
+  // Each entry is [lat, lon, intensity]
+  donationHeatmapLayer.setLatLngs(heatData);
+
+  // Field Agent locations
+  var fieldAgentLocations = {{ field_agent_locations | tojson }};
+  
+  // Custom icon for field agents
+  var fieldAgentIcon = L.icon({
+    iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png',
+    shadowSize: [41, 41]
+  });
+  
+  fieldAgentLocations.forEach(function(agent) {
+    var marker = L.marker([agent.lat, agent.lon], {icon: fieldAgentIcon})
+        .bindPopup("<strong>Field Agent:</strong> " + agent.name + 
+                   "<br><strong>Updated:</strong> " + agent.timestamp);
+    fieldAgentsLayer.addLayer(marker);
+  });
+
+  // Toggle layer visibility
+  document.getElementById('toggleFundRoutes').addEventListener('change', function(e) {
+    if (e.target.checked) {
+      map.addLayer(fundRoutesLayer);
+    } else {
+      map.removeLayer(fundRoutesLayer);
+    }
+  });
+
+  document.getElementById('toggleResourceRoutes').addEventListener('change', function(e) {
+    if (e.target.checked) {
+      map.addLayer(resourceRoutesLayer);
+    } else {
+      map.removeLayer(resourceRoutesLayer);
+    }
+  });
+
+  document.getElementById('toggleChildLocations').addEventListener('change', function(e) {
+    if (e.target.checked) {
+      map.addLayer(childLocationsLayer);
+    } else {
+      map.removeLayer(childLocationsLayer);
+    }
+  });
+
+  document.getElementById('toggleDonationRoutes').addEventListener('change', function(e) {
+    if (e.target.checked) {
+      map.addLayer(donationRoutesLayer);
+    } else {
+      map.removeLayer(donationRoutesLayer);
+    }
+  });
+
+  document.getElementById('toggleDonationHeatmap').addEventListener('change', function(e) {
+    if (e.target.checked) {
+      map.addLayer(donationHeatmapLayer);
+    } else {
+      map.removeLayer(donationHeatmapLayer);
+    }
+  });
+
+  document.getElementById('toggleFieldAgents').addEventListener('change', function(e) {
+    if (e.target.checked) {
+      map.addLayer(fieldAgentsLayer);
+    } else {
+      map.removeLayer(fieldAgentsLayer);
+    }
+  });
+</script>
+{% endblock %}

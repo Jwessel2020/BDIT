@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="fade-in">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-chart-line me-2"></i>Manager Dashboard</h2>
+    <div class="text-muted">
+      <i class="fas fa-user-circle me-2"></i>{{ current_user.username }}
+    </div>
+  </div>
+
+  <!-- Overview Stats -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="stats-card">
+        <h3>150</h3>
+        <p>Active Projects</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stats-card">
+        <h3>$2.5M</h3>
+        <p>Total Budget</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stats-card">
+        <h3>45</h3>
+        <p>Field Agents</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stats-card">
+        <h3>98%</h3>
+        <p>Project Success Rate</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="row">
+    <!-- Project Status -->
+    <div class="col-md-8">
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <i class="fas fa-project-diagram me-2"></i>Project Status
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-outline-primary btn-sm">Weekly</button>
+            <button class="btn btn-outline-primary btn-sm active">Monthly</button>
+            <button class="btn btn-outline-primary btn-sm">Yearly</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Project Name</th>
+                  <th>Status</th>
+                  <th>Progress</th>
+                  <th>Budget</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Medical Supplies Distribution</td>
+                  <td><span class="badge bg-success">On Track</span></td>
+                  <td>
+                    <div class="progress" style="height: 5px;">
+                      <div class="progress-bar bg-success" style="width: 75%"></div>
+                    </div>
+                  </td>
+                  <td>$50,000</td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Food Aid Program</td>
+                  <td><span class="badge bg-warning">At Risk</span></td>
+                  <td>
+                    <div class="progress" style="height: 5px;">
+                      <div class="progress-bar bg-warning" style="width: 45%"></div>
+                    </div>
+                  </td>
+                  <td>$75,000</td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Education Initiative</td>
+                  <td><span class="badge bg-success">On Track</span></td>
+                  <td>
+                    <div class="progress" style="height: 5px;">
+                      <div class="progress-bar bg-success" style="width: 90%"></div>
+                    </div>
+                  </td>
+                  <td>$100,000</td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resource Allocation -->
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-boxes me-2"></i>Resource Allocation
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h5 class="mb-3">Resource Distribution</h5>
+              <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                <p class="text-muted">Resource distribution chart will be displayed here</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h5 class="mb-3">Recent Allocations</h5>
+              <div class="list-group list-group-flush">
+                <div class="list-group-item">
+                  <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">Medical Supplies</h6>
+                    <small class="text-muted">2 hours ago</small>
+                  </div>
+                  <p class="mb-1">Allocated to Cape Town Clinic</p>
+                </div>
+                <div class="list-group-item">
+                  <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">Food Packages</h6>
+                    <small class="text-muted">4 hours ago</small>
+                  </div>
+                  <p class="mb-1">Distributed to Durban Center</p>
+                </div>
+                <div class="list-group-item">
+                  <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">Educational Materials</h6>
+                    <small class="text-muted">6 hours ago</small>
+                  </div>
+                  <p class="mb-1">Sent to Johannesburg Schools</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+      <!-- Quick Actions -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="fas fa-bolt me-2"></i>Quick Actions
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <button class="btn btn-primary">
+              <i class="fas fa-plus me-2"></i>New Project
+            </button>
+            <button class="btn btn-outline-primary">
+              <i class="fas fa-file-alt me-2"></i>Generate Report
+            </button>
+            <button class="btn btn-outline-primary">
+              <i class="fas fa-users me-2"></i>Manage Team
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-history me-2"></i>Recent Activity
+        </div>
+        <div class="card-body">
+          <div class="list-group list-group-flush">
+            <div class="list-group-item">
+              <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">Project Update</h6>
+                <small class="text-muted">3 hours ago</small>
+              </div>
+              <p class="mb-1">Medical Supplies project progress updated</p>
+            </div>
+            <div class="list-group-item">
+              <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">Resource Allocation</h6>
+                <small class="text-muted">5 hours ago</small>
+              </div>
+              <p class="mb-1">New resources allocated to Food Aid Program</p>
+            </div>
+            <div class="list-group-item">
+              <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">Team Update</h6>
+                <small class="text-muted">1 day ago</small>
+              </div>
+              <p class="mb-1">New field agent assigned to Education Initiative</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

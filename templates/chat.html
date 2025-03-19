@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="fade-in">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-comments me-2"></i>Messaging System</h2>
+    <div class="text-muted">
+      <i class="fas fa-user-circle me-2"></i>{{ current_user.username }}
+    </div>
+  </div>
+  
+  <div class="row">
+    <!-- Channels and Users Sidebar -->
+    <div class="col-md-4 mb-4">
+      <!-- Channels Section -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="fas fa-users me-2"></i>Channels
+        </div>
+        <div class="list-group list-group-flush">
+          {% for channel in channels %}
+          <a href="#" class="list-group-item list-group-item-action channel-item" data-channel="{{ channel }}">
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">{{ channel }}</h6>
+              <small class="badge bg-primary rounded-pill">3</small>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      
+      <!-- Direct Messages Section -->
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-user me-2"></i>Direct Messages
+        </div>
+        <div class="list-group list-group-flush">
+          {% for user in users %}
+          <a href="#" class="list-group-item list-group-item-action user-item" data-user-id="{{ user.id }}">
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">{{ user.username }}</h6>
+              {% if user.id % 2 == 0 %}
+              <small class="badge bg-success rounded-pill">1</small>
+              {% endif %}
+            </div>
+            <p class="mb-1 small text-muted">{{ user.role }}</p>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Chat Window -->
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <i class="fas fa-comment-dots me-2"></i><span id="current-chat">Select a channel or user</span>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-primary" id="refresh-btn">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="chat-messages" class="chat-messages" style="height: 400px; overflow-y: auto;">
+            {% if messages %}
+              {% for message in messages %}
+              <div class="message mb-3 {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
+                <div class="d-flex {% if message.sender_id == current_user.id %}justify-content-end{% endif %}">
+                  {% if message.sender_id != current_user.id %}
+                  <div class="flex-shrink-0">
+                    <i class="fas fa-user-circle fa-2x text-primary"></i>
+                  </div>
+                  {% endif %}
+                  <div class="flex-grow-1 {% if message.sender_id == current_user.id %}me-3 text-end{% else %}ms-3{% endif %}">
+                    <div class="message-content {% if message.sender_id == current_user.id %}bg-primary text-white{% else %}bg-light{% endif %} p-3 rounded">
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ message.sender.username }}</strong>
+                        <small class="{% if message.sender_id == current_user.id %}text-white-50{% else %}text-muted{% endif %}">{{ message.timestamp.strftime('%H:%M') }}</small>
+                      </div>
+                      <p class="mb-0">{{ message.content }}</p>
+                    </div>
+                  </div>
+                  {% if message.sender_id == current_user.id %}
+                  <div class="flex-shrink-0">
+                    <i class="fas fa-user-circle fa-2x text-primary"></i>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-center text-muted py-5">
+                <i class="fas fa-comments fa-4x mb-3"></i>
+                <p>Select a channel or user to start messaging</p>
+              </div>
+            {% endif %}
+          </div>
+          <div class="input-group mt-3">
+            <input type="text" id="message-input" class="form-control" placeholder="Type your message...">
+            <button id="send-message" class="btn btn-primary">
+              <i class="fas fa-paper-plane me-1"></i> Send
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include Socket.IO client -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Connect to the Socket.IO server
+  const socket = io();
+  
+  // Variables to track current chat context
+  let currentRecipientId = null;
+  let currentChannel = null;
+  let currentChatName = "Select a channel or user";
+  
+  // Cache DOM elements
+  const messageInput = document.getElementById('message-input');
+  const sendButton = document.getElementById('send-message');
+  const chatMessages = document.getElementById('chat-messages');
+  const currentChatDisplay = document.getElementById('current-chat');
+  const channelItems = document.querySelectorAll('.channel-item');
+  const userItems = document.querySelectorAll('.user-item');
+  const refreshButton = document.getElementById('refresh-btn');
+  
+  // Set up channel click events
+  channelItems.forEach(function(item) {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      const channel = this.getAttribute('data-channel');
+      
+      // Update UI to show active channel
+      channelItems.forEach(el => el.classList.remove('active'));
+      userItems.forEach(el => el.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Update current chat context
+      currentChannel = channel;
+      currentRecipientId = null;
+      currentChatName = channel;
+      currentChatDisplay.textContent = currentChatName;
+      
+      // Join channel room
+      socket.emit('join_channel', { channel: channel });
+      
+      // Load channel messages (this would be expanded with an AJAX call in a full implementation)
+      // For now, just clear the messages
+      // chatMessages.innerHTML = '';
+    });
+  });
+  
+  // Set up user click events
+  userItems.forEach(function(item) {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      const userId = this.getAttribute('data-user-id');
+      const userName = this.querySelector('h6').textContent;
+      
+      // Update UI to show active user
+      channelItems.forEach(el => el.classList.remove('active'));
+      userItems.forEach(el => el.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Update current chat context
+      currentChannel = null;
+      currentRecipientId = userId;
+      currentChatName = userName;
+      currentChatDisplay.textContent = currentChatName;
+      
+      // Load direct messages (this would be expanded with an AJAX call in a full implementation)
+      // For now, just clear the messages
+      // chatMessages.innerHTML = '';
+    });
+  });
+  
+  // Send message when button is clicked
+  sendButton.addEventListener('click', function() {
+    sendMessage();
+  });
+  
+  // Send message when Enter key is pressed in the input field
+  messageInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      sendMessage();
+    }
+  });
+  
+  // Refresh button click event
+  refreshButton.addEventListener('click', function() {
+    // This would be expanded with an AJAX call to refresh messages
+    location.reload();
+  });
+  
+  // Function to send message
+  function sendMessage() {
+    const messageContent = messageInput.value.trim();
+    if (messageContent === '') return;
+    
+    // Check if we have a valid recipient or channel
+    if (!currentChannel && !currentRecipientId) {
+      alert('Please select a channel or user first');
+      return;
+    }
+    
+    // Prepare message data
+    const messageData = {
+      sender_id: {{ current_user.id }},
+      content: messageContent,
+      priority: 'Normal'
+    };
+    
+    // Add recipient or channel based on current context
+    if (currentChannel) {
+      messageData.channel = currentChannel;
+    } else if (currentRecipientId) {
+      messageData.recipient_id = currentRecipientId;
+    }
+    
+    // Send the message via Socket.IO
+    socket.emit('send_message', messageData);
+    
+    // Clear input field
+    messageInput.value = '';
+  }
+  
+  // Handle incoming messages
+  socket.on('receive_message', function(data) {
+    // Create message element
+    const messageDiv = document.createElement('div');
+    const isSender = data.sender_id === {{ current_user.id }};
+    messageDiv.className = 'message mb-3 ' + (isSender ? 'message-sent' : 'message-received');
+    
+    const flexDiv = document.createElement('div');
+    flexDiv.className = 'd-flex ' + (isSender ? 'justify-content-end' : '');
+    
+    // Structure for sender's avatar and message content
+    if (!isSender) {
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'flex-shrink-0';
+      avatarDiv.innerHTML = '<i class="fas fa-user-circle fa-2x text-primary"></i>';
+      flexDiv.appendChild(avatarDiv);
+    }
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'flex-grow-1 ' + (isSender ? 'me-3 text-end' : 'ms-3');
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content ' + (isSender ? 'bg-primary text-white' : 'bg-light') + ' p-3 rounded';
+    
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'd-flex justify-content-between align-items-center mb-2';
+    
+    const senderName = document.createElement('strong');
+    senderName.textContent = data.sender_name;
+    
+    const timestamp = document.createElement('small');
+    timestamp.className = isSender ? 'text-white-50' : 'text-muted';
+    timestamp.textContent = data.timestamp;
+    
+    headerDiv.appendChild(senderName);
+    headerDiv.appendChild(timestamp);
+    
+    const messageText = document.createElement('p');
+    messageText.className = 'mb-0';
+    messageText.textContent = data.content;
+    
+    messageContent.appendChild(headerDiv);
+    messageContent.appendChild(messageText);
+    contentDiv.appendChild(messageContent);
+    flexDiv.appendChild(contentDiv);
+    
+    if (isSender) {
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'flex-shrink-0';
+      avatarDiv.innerHTML = '<i class="fas fa-user-circle fa-2x text-primary"></i>';
+      flexDiv.appendChild(avatarDiv);
+    }
+    
+    messageDiv.appendChild(flexDiv);
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom of chat window
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  });
+  
+  // Socket connection events
+  socket.on('connect', function() {
+    console.log('Connected to server');
+  });
+  
+  socket.on('disconnect', function() {
+    console.log('Disconnected from server');
+  });
+});
+</script>
+{% endblock %}

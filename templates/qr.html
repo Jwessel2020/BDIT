@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Upload a QR Code Image</h1>
+<form method="POST" action="/qr" enctype="multipart/form-data">
+  <div class="mb-3">
+    <label for="qrfile" class="form-label">Select a QR Code Image:</label>
+    <input type="file" class="form-control" name="qrfile" accept="image/*" required>
+  </div>
+  <button type="submit" class="btn btn-primary">Scan QR Code</button>
+</form>
+<p class="mt-3">
+  <a href="{{ url_for('index') }}">Back to Dashboard</a>
+</p>
+{% endblock %}

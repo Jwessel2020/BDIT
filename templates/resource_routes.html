@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Resource Routes</h2>
+<div id="map" style="height: 600px;"></div>
+
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+  // Initialize the map centered on a region of interest
+  var map = L.map('map').setView([-26, 28], 6);
+
+  // Add OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Define color mapping for resource types
+  var resourceColors = {
+      "Medical": "red",
+      "Food": "green",
+      "Shelter": "blue",
+      "Clothing": "purple",
+      "Other": "orange"
+  };
+
+  // Plot each resource route from the data
+  var routes = {{ routes_data | tojson }};
+  routes.forEach(function(route) {
+      var color = resourceColors[route.resource_type] || resourceColors["Other"];
+      var origin = [route.origin.lat, route.origin.lon];
+      var destination = [route.destination.lat, route.destination.lon];
+
+      L.polyline([origin, destination], {color: color, weight: 5}).addTo(map)
+          .bindPopup("Resource Type: " + route.resource_type);
+  });
+
+  // Add a legend to the map
+  var legend = L.control({position: 'bottomright'});
+  legend.onAdd = function (map) {
+      var div = L.DomUtil.create('div', 'info legend'),
+          types = Object.keys(resourceColors);
+
+      types.forEach(function(type) {
+          div.innerHTML +=
+              '<i style="background:' + resourceColors[type] + '; width: 18px; height: 18px; display: inline-block; margin-right: 5px;"></i> ' +
+              type + '<br>';
+      });
+      return div;
+  };
+  legend.addTo(map);
+</script>
+{% endblock %}
+<!--       .bindPopup("Resource Route: " + route.origin.name + " → " + route.destination.name); -->

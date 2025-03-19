@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="fade-in">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-hand-holding-usd me-2"></i>Donor Dashboard</h2>
+    <div class="text-muted">
+      <i class="fas fa-user-circle me-2"></i>{{ current_user.username }}
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="stats-card">
+        <h3>${{ "{:,.2f}".format(donation_stats.total_donations) }}</h3>
+        <p>Total Donations</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stats-card">
+        <h3>{{ donation_stats.projects_supported }}</h3>
+        <p>Projects Supported</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stats-card">
+        <h3>{{ donation_stats.impact_score }}%</h3>
+        <p>Impact Score</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Currency Tracing -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <i class="fas fa-exchange-alt me-2"></i>Currency Tracing
+    </div>
+    <div class="card-body">
+      <div class="d-flex align-items-center">
+        <div class="flex-grow-1">
+          <p class="mb-0">{{ donation_stats.currency_trace }}</p>
+        </div>
+        <div class="ms-3">
+          <i class="fas fa-chart-line fa-2x text-primary"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Map & Dashboards -->
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-globe me-2"></i>Interactive Map & Dashboards
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-8">
+          <div class="ratio ratio-16x9">
+            <div id="map" class="rounded"></div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="list-group">
+            <a href="#" class="list-group-item list-group-item-action active">
+              <i class="fas fa-map-marker-alt me-2"></i>Donation Impact Map
+            </a>
+            <a href="#" class="list-group-item list-group-item-action">
+              <i class="fas fa-chart-bar me-2"></i>Project Analytics
+            </a>
+            <a href="#" class="list-group-item list-group-item-action">
+              <i class="fas fa-users me-2"></i>Beneficiary Stories
+            </a>
+            <a href="#" class="list-group-item list-group-item-action">
+              <i class="fas fa-file-alt me-2"></i>Impact Reports
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+  // Initialize the map
+  var map = L.map('map').setView([-30, 25], 5);
+  
+  // Add OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+  }).addTo(map);
+</script>
+{% endblock %}
