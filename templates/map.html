@@ -1,52 +1,90 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="row">
-  <div class="col">
-    <h1 class="mb-4">Unified Map</h1>
+<div class="dashboard-container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-globe me-2"></i>Unified Map</h2>
+    <div class="text-muted"><i class="fas fa-user-circle me-2"></i>{{ current_user.username }}</div>
   </div>
-</div>
 
-<div class="row mb-4">
-  <div class="col">
-    <div class="card">
-      <div class="card-header">Map Layers</div>
-      <div class="card-body">
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="toggleFundRoutes" checked>
-          <label class="form-check-label" for="toggleFundRoutes">Fund Routes</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="toggleResourceRoutes" checked>
-          <label class="form-check-label" for="toggleResourceRoutes">Resource Routes</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="toggleChildLocations" checked>
-          <label class="form-check-label" for="toggleChildLocations">Child Locations</label>
-        </div>
-        <!-- New toggles -->
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="toggleDonationRoutes" checked>
-          <label class="form-check-label" for="toggleDonationRoutes">Donation Routes</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="toggleDonationHeatmap" checked>
-          <label class="form-check-label" for="toggleDonationHeatmap">Donation Heatmap</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="toggleFieldAgents" checked>
-          <label class="form-check-label" for="toggleFieldAgents">Field Agents</label>
+  <div class="row g-3">
+    <div class="col-lg-9">
+      <!-- Main Map Card -->
+      <div class="card">
+        <div class="card-body p-0" style="height: 650px;">
+          <div id="map" style="width: 100%; height: 100%; border-radius: 12px;"></div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-
-<div class="row">
-  <div class="col">
-    <div class="card">
-      <div class="card-header">Map</div>
-      <div class="card-body p-0" style="height: 600px;">
-        <div id="map" style="width: 100%; height: 100%;"></div>
+    
+    <div class="col-lg-3">
+      <!-- Map Controls -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0">Map Layers</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="toggleFundRoutes" checked>
+              <label class="form-check-label" for="toggleFundRoutes">Fund Routes</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="toggleResourceRoutes" checked>
+              <label class="form-check-label" for="toggleResourceRoutes">Resource Routes</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="toggleChildLocations" checked>
+              <label class="form-check-label" for="toggleChildLocations">Child Locations</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="toggleDonationRoutes" checked>
+              <label class="form-check-label" for="toggleDonationRoutes">Donation Routes</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="toggleDonationHeatmap" checked>
+              <label class="form-check-label" for="toggleDonationHeatmap">Donation Heatmap</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="toggleFieldAgents" checked>
+              <label class="form-check-label" for="toggleFieldAgents">Field Agents</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Map Legend -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Map Legend</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="d-flex align-items-center mb-2">
+              <div style="width:20px; height:3px; background-color:green;" class="me-2"></div>
+              <span>Fund Routes</span>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+              <div style="width:20px; height:3px; background-color:red;" class="me-2"></div>
+              <span>Medical Resources</span>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+              <div style="width:20px; height:3px; background-color:orange;" class="me-2"></div>
+              <span>Food Resources</span>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+              <div style="width:20px; height:3px; background-color:blue;" class="me-2"></div>
+              <span>Shelter Resources</span>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+              <div style="width:20px; height:3px; background-color:purple;" class="me-2"></div>
+              <span>Donation Routes</span>
+            </div>
+          </div>
+          
+          <div class="alert alert-info p-2 mb-0">
+            <small class="d-block text-center">Use mouse wheel to zoom in/out</small>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -59,6 +97,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
   // Initialize the map centered over South Africa
   var map = L.map('map').setView([-30, 25], 5);
 
@@ -74,7 +113,7 @@
   var donationRoutesLayer = L.layerGroup().addTo(map);
   var fieldAgentsLayer = L.layerGroup().addTo(map);
 
-  // Donation Heatmap = specialized heat layer
+  // Donation Heatmap layer
   var donationHeatmapLayer = L.heatLayer([], {
     radius: 25,
     blur: 15,
@@ -85,8 +124,12 @@
   var fundTracing = {{ fund_tracing | tojson }};
   var fundOrigin = [fundTracing.origin.lat, fundTracing.origin.lon];
   var fundDestination = [fundTracing.destination.lat, fundTracing.destination.lon];
-  var fundPolyline = L.polyline([fundOrigin, fundDestination], {color: 'green', weight: 4})
-      .bindPopup("Fund Tracing Route: " + fundTracing.origin.name + " → " + fundTracing.destination.name);
+  
+  var fundPolyline = L.polyline([fundOrigin, fundDestination], {
+    color: 'green', 
+    weight: 4
+  }).bindPopup("Fund Tracing Route: " + fundTracing.origin.name + " → " + fundTracing.destination.name);
+  
   fundRoutesLayer.addLayer(fundPolyline);
 
   // 2) Resource routes
@@ -94,19 +137,21 @@
   resourceRoutes.forEach(function(route) {
     var origin = [route.origin.lat, route.origin.lon];
     var destination = [route.destination.lat, route.destination.lon];
-    var color;
-    switch(route.resource_type) {
-      case "Medical":
-        color = "red"; break;
-      case "Food":
-        color = "orange"; break;
-      case "Shelter":
-        color = "blue"; break;
-      default:
-        color = "gray";
+    var color = "gray";
+    
+    if (route.resource_type === "Medical") {
+      color = "red";
+    } else if (route.resource_type === "Food") {
+      color = "orange";
+    } else if (route.resource_type === "Shelter") {
+      color = "blue";
     }
-    var polyline = L.polyline([origin, destination], {color: color, weight: 4})
-        .bindPopup("Resource Route (" + route.resource_type + ")");
+    
+    var polyline = L.polyline([origin, destination], {
+      color: color, 
+      weight: 4
+    }).bindPopup("Resource Route (" + route.resource_type + ")");
+    
     resourceRoutesLayer.addLayer(polyline);
   });
 
@@ -114,7 +159,7 @@
   var childLocations = {{ child_locations | tojson }};
   childLocations.forEach(function(child) {
     var marker = L.marker([child.lat, child.lon])
-        .bindPopup("Child Location: " + child.name);
+      .bindPopup("Child Location: " + child.name);
     childLocationsLayer.addLayer(marker);
   });
 
@@ -123,14 +168,17 @@
   donationRoutes.forEach(function(route) {
     var origin = [route.origin.lat, route.origin.lon];
     var destination = [route.destination.lat, route.destination.lon];
-    L.polyline([origin, destination], {color: 'purple', weight: 3})
-      .bindPopup("Donation: $" + route.donation_size + " for " + route.donation_need)
-      .addTo(donationRoutesLayer);
+    
+    var polyline = L.polyline([origin, destination], {
+      color: 'purple', 
+      weight: 3
+    }).bindPopup("Donation: $" + route.donation_size + " for " + route.donation_need);
+    
+    donationRoutesLayer.addLayer(polyline);
   });
 
   // 5) Donation heatmap
   var heatData = {{ heat_data | tojson }};
-  // Each entry is [lat, lon, intensity]
   donationHeatmapLayer.setLatLngs(heatData);
 
   // Field Agent locations
@@ -147,9 +195,11 @@
   });
   
   fieldAgentLocations.forEach(function(agent) {
-    var marker = L.marker([agent.lat, agent.lon], {icon: fieldAgentIcon})
-        .bindPopup("<strong>Field Agent:</strong> " + agent.name + 
-                   "<br><strong>Updated:</strong> " + agent.timestamp);
+    var marker = L.marker([agent.lat, agent.lon], {
+      icon: fieldAgentIcon
+    }).bindPopup("<strong>Field Agent:</strong> " + agent.name + 
+               "<br><strong>Updated:</strong> " + agent.timestamp);
+    
     fieldAgentsLayer.addLayer(marker);
   });
 
@@ -201,5 +251,6 @@
       map.removeLayer(fieldAgentsLayer);
     }
   });
+});
 </script>
 {% endblock %}

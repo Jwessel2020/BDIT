@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if project %}
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>{{ project.name }}</h2>
+            <p class="text-muted">Managed by: {{ project.manager.username if project.manager else 'N/A' }} | Status: <span class="badge bg-secondary">{{ project.status }}</span></p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <p><strong>Start Date:</strong> {{ project.start_date.strftime('%Y-%m-%d') if project.start_date else 'N/A' }}</p>
+            <p><strong>End Date:</strong> {{ project.end_date.strftime('%Y-%m-%d') if project.end_date else 'N/A' }}</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">Project Overview</div>
+        <div class="card-body">
+            <p><strong>Description:</strong> {{ project.description | safe if project.description else 'No description provided.' }}</p>
+            {% if project.goal_description %}
+            <h5 class="mt-3">Project Goal</h5>
+            <p>{{ project.goal_description }}</p>
+            <div class="progress mb-2" style="height: 25px;">
+                <div class="progress-bar" role="progressbar" style="width: {{ ((project.goal_current_value / project.goal_target_value * 100) if project.goal_target_value and project.goal_target_value != 0 else 0) | string ~ '%' }};" aria-valuenow="{{ project.goal_current_value }}" aria-valuemin="0" aria-valuemax="{{ project.goal_target_value }}">
+                    {{ project.goal_current_value | round(2) }} / {{ project.goal_target_value | round(2) }} {{ project.goal_unit }}
+                </div>
+            </div>
+            {% else %}
+            <p>No specific goals defined for this project.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">Financial Summary</div>
+        <div class="card-body">
+            {% if financials %}
+            <p><strong>Budget:</strong> ${{ financials.budget | round(2) }}</p>
+            <p><strong>Donations Received:</strong> ${{ financials.donations_received | round(2) }}</p>
+            <p><strong>Remaining Budget:</strong> ${{ financials.remaining_budget | round(2) }}</p>
+                {% if financials.budget > 0 %}
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ ((financials.donations_received / financials.budget * 100) if financials.budget and financials.budget != 0 else 0) | string ~ '%' }};" aria-valuenow="{{ financials.donations_received }}" aria-valuemin="0" aria-valuemax="{{ financials.budget }}">
+                        {{ (financials.donations_received / financials.budget * 100) | round(1) if financials.budget else 0 }}% Funded
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">Budget not set or is zero.</p>
+                {% endif %}
+            {% else %}
+            <p class="text-muted">No financial information available for this project.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Placeholder for Map Integration -->
+    
+    <div class="card mb-4">
+        <div class="card-header">Project Map Overview</div>
+        <div class="card-body">
+            <div id="projectDetailMap" style="height: 400px;"></div>
+            <p class="text-muted small mt-2">Map displays resource routes, child locations, field agent activity, and heat data for this project.</p>
+        </div>
+    </div>
+    
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">Resource Routes</div>
+                <div class="card-body">
+                    {% if resource_routes %}
+                    <ul class="list-group list-group-flush">
+                        {% for route in resource_routes %}
+                        <li class="list-group-item">
+                            <strong>{{ route.resource_type }}</strong> ({{ route.supply_quantity }})<br>
+                            <small>From: ({{ route.origin.lat }}, {{ route.origin.lon }}) To: ({{ route.destination.lat }}, {{ route.destination.lon }})</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No resource routes defined for this project.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">Field Agent Activity</div>
+                <div class="card-body">
+                    {% if field_agent_locations %}
+                    <ul class="list-group list-group-flush">
+                        {% for agent_loc in field_agent_locations %}
+                        <li class="list-group-item">
+                            <strong>{{ agent_loc.name }}</strong> at ({{ agent_loc.lat }}, {{ agent_loc.lon }})<br>
+                            <small>Last seen: {{ agent_loc.timestamp }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No field agent activity recorded for this project.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+         <div class="col-lg-12 mb-4">
+            <div class="card">
+                <div class="card-header">Associated Child Profiles</div>
+                <div class="card-body">
+                    {% if child_locations %} {# Assuming child_locations contains simplified profile info or just names for this context #}
+                    <ul class="list-group list-group-flush">
+                        {% for child in child_locations %}
+                        <li class="list-group-item">
+                            <strong>{{ child.name }}</strong>
+                            {% if child.lat and child.lon %}
+                             <small class="text-muted"> - Last known location: ({{ child.lat }}, {{ child.lon }})</small>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No children associated with this project or their locations are not specified.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{{ url_for('manager_dashboard') }}" class="btn btn-secondary mt-3"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
+
+    {% else %}
+    <div class="alert alert-warning" role="alert">
+        Project details could not be loaded.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Add any project_detail specific JS here if needed later, e.g., for initializing a map -->
+
+<script>
+// Example: JavaScript to initialize a map if you add one
+// Ensure you have Leaflet or another mapping library included in base.html or here
+if (typeof L !== 'undefined' && document.getElementById('projectDetailMap')) {
+    const map = L.map('projectDetailMap').setView([-28.4793, 24.6727], 5); // Default view for South Africa
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Example: Add markers for child_locations
+    {% if child_locations %}
+        {% for loc in child_locations %}
+            L.marker([{{ loc.lat }}, {{ loc.lon }}]).addTo(map)
+                .bindPopup("<b>{{ loc.name }}</b><br>Child Location");
+        {% endfor %}
+    {% endif %}
+
+    // Example: Add lines for resource_routes
+    {% if resource_routes %}
+        {% for route in resource_routes %}
+            var latlngs = [
+                [{{ route.origin.lat }}, {{ route.origin.lon }}],
+                [{{ route.destination.lat }}, {{ route.destination.lon }}]
+            ];
+            var polyline = L.polyline(latlngs, {color: 'blue'}).addTo(map);
+            polyline.bindPopup("<b>{{ route.resource_type }}</b><br>{{ route.supply_quantity }}");
+        {% endfor %}
+    {% endif %}
+
+    // Example: Add markers for field_agent_locations
+    {% if field_agent_locations %}
+        {% for loc in field_agent_locations %}
+            var agentMarker = L.marker([{{ loc.lat }}, {{ loc.lon }}], {
+                icon: L.icon({
+                    iconUrl: '{{ url_for("static", filename="images/field_agent_icon.png") }}',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34]
+                })
+            }).addTo(map);
+            // Example custom icon
+            agentMarker.bindPopup("<b>{{ loc.name }}</b><br>Agent Location<br><small>{{ loc.timestamp }}</small>");
+        {% endfor %}
+    {% endif %}
+    
+    // Example: Add heatmap layer
+    // You'd need a Leaflet heatmap plugin like Leaflet.heat
+    {% if heat_data %}
+        var heat = L.heatLayer({{ heat_data | tojson }}, {radius: 25}).addTo(map);
+    {% endif %}
+}
+</script>
+
+{% endblock %} 

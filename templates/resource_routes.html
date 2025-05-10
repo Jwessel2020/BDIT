@@ -1,55 +1,148 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Resource Routes</h2>
-<div id="map" style="height: 600px;"></div>
+<div class="dashboard-container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-route me-2"></i>Resource Routes</h2>
+    <div class="text-muted"><i class="fas fa-user-circle me-2"></i>{{ current_user.username }}</div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-9">
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div id="map" style="height: 650px; border-radius: 12px;"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-3">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Route Legend</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3" id="legend-content">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+      
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Route Information</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" id="route-list">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Leaflet CSS and JS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  // Initialize the map centered on a region of interest
-  var map = L.map('map').setView([-26, 28], 6);
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the map centered on a region of interest
+    var map = L.map('map').setView([-26, 28], 6);
 
-  // Add OpenStreetMap tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-  }).addTo(map);
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
-  // Define color mapping for resource types
-  var resourceColors = {
-      "Medical": "red",
-      "Food": "green",
-      "Shelter": "blue",
-      "Clothing": "purple",
-      "Other": "orange"
-  };
+    // Define color mapping for resource types with more modern colors
+    var resourceColors = {
+      "Medical": "#e74c3c",  // Red
+      "Food": "#27ae60",     // Green
+      "Shelter": "#3498db",  // Blue
+      "Clothing": "#9b59b6", // Purple
+      "Other": "#f39c12"     // Orange
+    };
 
-  // Plot each resource route from the data
-  var routes = {{ routes_data | tojson }};
-  routes.forEach(function(route) {
+    // Create icons for legend
+    var legendHTML = '';
+    for (const [type, color] of Object.entries(resourceColors)) {
+      legendHTML += `
+        <div class="d-flex align-items-center mb-2">
+          <div style="width:20px; height:4px; background-color:${color};" class="me-2"></div>
+          <span>${type} Resources</span>
+        </div>
+      `;
+    }
+    document.getElementById('legend-content').innerHTML = legendHTML;
+    
+    // Route list content
+    var routeListHTML = '';
+    
+    // Plot each resource route from the data
+    var routes = {{ routes_data | tojson }};
+    var polylines = [];
+    
+    routes.forEach(function(route, index) {
       var color = resourceColors[route.resource_type] || resourceColors["Other"];
       var origin = [route.origin.lat, route.origin.lon];
       var destination = [route.destination.lat, route.destination.lon];
 
-      L.polyline([origin, destination], {color: color, weight: 5}).addTo(map)
-          .bindPopup("Resource Type: " + route.resource_type);
-  });
-
-  // Add a legend to the map
-  var legend = L.control({position: 'bottomright'});
-  legend.onAdd = function (map) {
-      var div = L.DomUtil.create('div', 'info legend'),
-          types = Object.keys(resourceColors);
-
-      types.forEach(function(type) {
-          div.innerHTML +=
-              '<i style="background:' + resourceColors[type] + '; width: 18px; height: 18px; display: inline-block; margin-right: 5px;"></i> ' +
-              type + '<br>';
+      // Create the polyline
+      var polyline = L.polyline([origin, destination], {
+        color: color, 
+        weight: 4,
+        opacity: 0.8
+      }).addTo(map);
+      
+      // Add popup
+      polyline.bindPopup(`
+        <div>
+          <strong>Resource Type:</strong> ${route.resource_type}<br>
+          <strong>Origin:</strong> ${route.origin.name}<br>
+          <strong>Destination:</strong> ${route.destination.name}<br>
+          <strong>Distance:</strong> ${Math.round(map.distance(origin, destination) / 1000)} km
+        </div>
+      `);
+      
+      // Store for later reference
+      polylines.push(polyline);
+      
+      // Add to route list
+      routeListHTML += `
+        <a href="#" class="list-group-item list-group-item-action route-item" data-route-index="${index}">
+          <div class="d-flex w-100 justify-content-between">
+            <h6 class="mb-1">${route.resource_type}</h6>
+            <small class="text-muted">
+              <i class="fas fa-truck-loading"></i>
+            </small>
+          </div>
+          <p class="mb-1 small">${route.origin.name} → ${route.destination.name}</p>
+        </a>
+      `;
+    });
+    
+    document.getElementById('route-list').innerHTML = routeListHTML;
+    
+    // Add click handlers for route list items
+    document.querySelectorAll('.route-item').forEach(function(item) {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        var index = parseInt(this.getAttribute('data-route-index'));
+        var route = routes[index];
+        var polyline = polylines[index];
+        
+        // Fit map to this route
+        map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+        
+        // Open popup
+        polyline.openPopup();
+        
+        // Highlight selected route
+        document.querySelectorAll('.route-item').forEach(el => el.classList.remove('active'));
+        this.classList.add('active');
       });
-      return div;
-  };
-  legend.addTo(map);
+    });
+  });
 </script>
-{% endblock %}
-<!--       .bindPopup("Resource Route: " + route.origin.name + " → " + route.destination.name); -->
+{% endblock %} 

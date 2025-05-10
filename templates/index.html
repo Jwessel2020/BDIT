@@ -1,9 +1,144 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="text-center">
-  <h1>Welcome to the NGO Operations Platform</h1>
-  <p>You are logged in as <strong>{{ current_user.username }}</strong>
-     (Role: <strong>{{ current_user.role }}</strong>).</p>
-  <p>Use the navigation bar above to access your role-specific features.</p>
+<div class="dashboard-container">
+  <!-- Hero Section -->
+  <div class="bg-primary text-white p-4 p-md-5 mb-4 rounded-3">
+    <div class="container-fluid py-4">
+      <h1 class="display-5 fw-bold">Welcome to the NGO Operations Platform</h1>
+      <p class="col-md-8 fs-4">You are logged in as <strong>{{ current_user.username }}</strong> ({{ current_user.role }}).</p>
+      <p class="col-md-8 fs-5">Together, we're making a difference in children's lives across Africa.</p>
+      <button class="btn btn-light btn-lg mt-3">
+        <i class="fas fa-rocket me-2"></i>Get Started
+      </button>
+    </div>
+  </div>
+
+  <!-- Role-Based Quick Access -->
+  <div class="row g-4 mb-4">
+    {% if current_user.role == 'donor' %}
+    <div class="col-md-6 col-lg-3">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-block mb-3">
+            <i class="fas fa-hand-holding-heart fa-2x text-primary"></i>
+          </div>
+          <h5 class="card-title">Make a Donation</h5>
+          <p class="card-text">Support children with financial donations for their well-being.</p>
+          <a href="{{ url_for('donor') }}" class="btn btn-sm btn-primary mt-2">Donate Now</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if current_user.role == 'field_agent' %}
+    <div class="col-md-6 col-lg-3">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="rounded-circle bg-success bg-opacity-10 p-3 d-inline-block mb-3">
+            <i class="fas fa-map-marked-alt fa-2x text-success"></i>
+          </div>
+          <h5 class="card-title">Field Operations</h5>
+          <p class="card-text">Manage resources and track distribution in the field.</p>
+          <a href="{{ url_for('field_agent') }}" class="btn btn-sm btn-success mt-2">Access Dashboard</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if current_user.role == 'mission_manager' %}
+    <div class="col-md-6 col-lg-3">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="rounded-circle bg-info bg-opacity-10 p-3 d-inline-block mb-3">
+            <i class="fas fa-chart-line fa-2x text-info"></i>
+          </div>
+          <h5 class="card-title">Mission Management</h5>
+          <p class="card-text">Monitor operations and coordinate resources efficiently.</p>
+          <a href="{{ url_for('manager_dashboard') }}" class="btn btn-sm btn-info mt-2">View Dashboard</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if current_user.role == 'child_care' %}
+    <div class="col-md-6 col-lg-3">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="rounded-circle bg-warning bg-opacity-10 p-3 d-inline-block mb-3">
+            <i class="fas fa-child fa-2x text-warning"></i>
+          </div>
+          <h5 class="card-title">Child Care Center</h5>
+          <p class="card-text">Manage child profiles and monitor their well-being.</p>
+          <a href="{{ url_for('child_care') }}" class="btn btn-sm btn-warning mt-2">Manage Profiles</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="col-md-6 col-lg-3">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="rounded-circle bg-secondary bg-opacity-10 p-3 d-inline-block mb-3">
+            <i class="fas fa-globe fa-2x text-secondary"></i>
+          </div>
+          <h5 class="card-title">Unified Map</h5>
+          <p class="card-text">View distribution networks and resources on a map.</p>
+          <a href="{{ url_for('map_view') }}" class="btn btn-sm btn-secondary mt-2">Open Map</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="rounded-circle bg-danger bg-opacity-10 p-3 d-inline-block mb-3">
+            <i class="fas fa-comments fa-2x text-danger"></i>
+          </div>
+          <h5 class="card-title">Mission Chat</h5>
+          <p class="card-text">Communicate with team members in real-time.</p>
+          <a href="{{ url_for('chat') }}" class="btn btn-sm btn-danger mt-2">Start Chatting</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics Section -->
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="mb-0">Organization Impact</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-4 text-center">
+            <div class="col-md-3">
+              <div class="p-3">
+                <h2 class="fw-bold text-primary">2,458</h2>
+                <p class="text-muted mb-0">Children Supported</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="p-3">
+                <h2 class="fw-bold text-success">$1.2M</h2>
+                <p class="text-muted mb-0">Donations Received</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="p-3">
+                <h2 class="fw-bold text-info">42</h2>
+                <p class="text-muted mb-0">Active Missions</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="p-3">
+                <h2 class="fw-bold text-warning">156</h2>
+                <p class="text-muted mb-0">Field Agents</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

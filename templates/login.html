@@ -1,51 +1,41 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="fade-in">
-  <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-body p-5">
-          <div class="text-center mb-4">
-            <i class="fas fa-user-circle fa-3x text-primary mb-3"></i>
-            <h2 class="h4 mb-0">Welcome Back</h2>
-            <p class="text-muted">Please sign in to continue</p>
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="col-md-5 col-lg-4 col-xl-3">
+    <div class="card border-0">
+      <div class="card-body p-4 p-md-5">
+        <div class="text-center mb-4">
+          <div class="bg-light rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 80px; height: 80px;">
+            <i class="fas fa-user-circle fa-3x text-primary"></i>
+          </div>
+          <h2 class="fw-bold">Welcome Back</h2>
+          <p class="text-muted">Please sign in to continue</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('login') }}">
+          <div class="mb-4">
+            <label for="username" class="form-label small text-muted mb-1">Username</label>
+            <input type="text" class="form-control form-control-lg border py-3" name="username" placeholder="Enter your username" required>
           </div>
 
-          <form method="POST" action="{{ url_for('login') }}">
-            <div class="mb-3">
-              <label for="username" class="form-label">Username</label>
-              <div class="input-group">
-                <span class="input-group-text">
-                  <i class="fas fa-user"></i>
-                </span>
-                <input type="text" class="form-control" name="username" required>
-              </div>
-            </div>
+          <div class="mb-4">
+            <label for="password" class="form-label small text-muted mb-1">Password</label>
+            <input type="password" class="form-control form-control-lg border py-3" name="password" placeholder="Enter your password" required>
+          </div>
 
-            <div class="mb-4">
-              <label for="password" class="form-label">Password</label>
-              <div class="input-group">
-                <span class="input-group-text">
-                  <i class="fas fa-lock"></i>
-                </span>
-                <input type="password" class="form-control" name="password" required>
-              </div>
-            </div>
-
-            <div class="d-grid">
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-sign-in-alt me-2"></i>Sign In
-              </button>
-            </div>
-          </form>
-
-          <div class="text-center mt-4">
+          <div class="d-grid mb-4">
+            <button type="submit" class="btn btn-primary py-3 fw-medium">
+              Sign In
+            </button>
+          </div>
+          
+          <div class="text-center">
             <p class="mb-0">
               Don't have an account?
-              <a href="{{ url_for('register') }}" class="text-primary">Register here</a>
+              <a href="{{ url_for('register') }}" class="text-primary fw-medium">Register here</a>
             </p>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   </div>

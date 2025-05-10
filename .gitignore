@@ -27,6 +27,9 @@ Thumbs.db
 instance/
 .webassets-cache
 
+# Application logs
+app.log
+
 # Distribution / packaging
 dist/
 build/

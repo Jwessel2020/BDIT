@@ -1,17 +1,36 @@
 # app.py
+import os # Added missing import for os module
+import logging # Import logging module
+from logging.handlers import RotatingFileHandler # For log rotation
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, abort
 import random
-from models import db, Donation, User, ResourceRoute, ChildLocation, ChildProfile, Message, FieldAgentLocation
+from models import db, Project, Donation, User, ResourceRoute, ChildLocation, ChildProfile, Message, FieldAgentLocation
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from functools import wraps
 from datetime import datetime
 import json
+from sqlalchemy import func # For sum aggregation
+from decimal import Decimal
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ngo.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'supersecretkey'  # Replace with a secure key
+app.config['DEBUG'] = True # Explicitly enable Flask debug mode
 db.init_app(app)
+
+# --- Logging Setup ---
+# Removed 'if not app.debug:' to ensure file logging is always active for troubleshooting
+log_file = 'app.log'
+file_handler = RotatingFileHandler(log_file, maxBytes=1024 * 1024 * 100, backupCount=20)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.DEBUG) # Set to DEBUG to capture more details
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.DEBUG) # Set app logger to DEBUG
+app.logger.info('NGO Operations Platform startup - File logging is active.')
+# --- End Logging Setup ---
 
 #####################################
 # Flask-Login Configuration
@@ -22,7 +41,7 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id)) 
+    return User.query.get(int(user_id))
 
 def role_required(*roles):
     """
@@ -34,7 +53,9 @@ def role_required(*roles):
             if not current_user.is_authenticated:
                 return redirect(url_for('login'))
             if current_user.role not in roles:
-                return abort(403)
+                # If not authorized, redirect to index or show a 403 error
+                flash('You are not authorized to view this page.', 'danger')
+                return redirect(url_for('index'))
             return fn(*args, **kwargs)
         return decorated_view
     return wrapper
@@ -44,18 +65,27 @@ def role_required(*roles):
 #####################################
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        print(f"Attempting login for {username}")
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             login_user(user)
             flash('Logged in successfully!', 'success')
+            # Redirect based on role
+            if user.role == 'mission_manager':
+                return redirect(url_for('manager_dashboard'))
+            elif user.role == 'field_agent':
+                return redirect(url_for('field_agent'))
+            elif user.role == 'donor':
+                return redirect(url_for('donor'))
+            elif user.role == 'child_care':
+                return redirect(url_for('child_care'))
             return redirect(url_for('index'))
         else:
             flash('Invalid username or password.', 'danger')
-            return redirect(url_for('login'))
     return render_template('login.html')
 
 @app.route('/logout')
@@ -67,6 +97,8 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -86,100 +118,72 @@ def register():
 # Application Routes
 #####################################
 @app.route('/')
+@login_required
 def index():
-    if current_user.is_authenticated:
-        return render_template('index.html')
-    else:
-        return redirect(url_for('login'))
+    # Redirect user to their specific dashboard based on role
+    if current_user.role == 'mission_manager':
+        return redirect(url_for('manager_dashboard'))
+    elif current_user.role == 'field_agent':
+        return redirect(url_for('field_agent'))
+    elif current_user.role == 'donor':
+        return redirect(url_for('donor'))
+    elif current_user.role == 'child_care':
+        return redirect(url_for('child_care'))
+    return render_template('index.html') # Fallback, though ideally all roles have a specific landing page
 
 @app.route('/field_agent')
 @login_required
-@role_required('field_agent', 'mission_manager')
+@role_required('field_agent') # Only field agents
 def field_agent():
-    # Get the latest location for this agent, or create a default if none exists
     agent_location = FieldAgentLocation.query.filter_by(user_id=current_user.id).order_by(FieldAgentLocation.timestamp.desc()).first()
-    
-    if not agent_location:
-        # Default to a location in South Africa if no location exists yet
-        gps_data = {
-            "latitude": -30.5595,
-            "longitude": 22.9375
-        }
-    else:
-        gps_data = {
-            "latitude": agent_location.lat,
-            "longitude": agent_location.lon
-        }
-    
-    # In a real app, you might fetch real messages for this user
-    messages = []  # This would be replaced with real message data
-    
+    gps_data = {"latitude": -30.5595, "longitude": 22.9375} # Default
+    if agent_location:
+        gps_data = {"latitude": agent_location.lat, "longitude": agent_location.lon}
+    # For a real app, fetch messages specific to this agent or their projects
+    messages = Message.query.filter(
+        (Message.recipient_id == current_user.id) |
+        (Message.sender_id == current_user.id) # Consider project-specific channels too
+    ).order_by(Message.timestamp.desc()).limit(10).all()
     return render_template('field_agent.html', gps_data=gps_data, messages=messages)
 
 @app.route('/update_location', methods=['POST'])
 @login_required
-@role_required('field_agent', 'mission_manager')
+@role_required('field_agent')
 def update_location():
-    try:
-        # In a real app, you'd get this from a GPS system
-        # For demo purposes, we'll generate a random location in South Africa
-        # Actual coords would come from the request
-        
-        # If you want to test with specific coordinates, you could uncomment these lines
-        # lat = request.form.get('lat')
-        # lon = request.form.get('lon')
-        
-        # For demo, we'll use random coordinates around South Africa
-        lat = round(random.uniform(-35, -22), 6)  # South Africa latitude range
-        lon = round(random.uniform(16, 33), 6)    # South Africa longitude range
-        
-        # Create a new location entry
-        new_location = FieldAgentLocation(
-            user_id=current_user.id,
-            lat=lat,
-            lon=lon,
-            timestamp=datetime.now()
-        )
-        
-        db.session.add(new_location)
-        db.session.commit()
-        
-        return jsonify({
-            "success": True,
-            "latitude": lat,
-            "longitude": lon,
-            "message": "Location updated successfully"
-        })
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": f"Error updating location: {str(e)}"
-        }), 500
+    lat = round(random.uniform(-35, -22), 6)
+    lon = round(random.uniform(16, 33), 6)
+    # In a real app, you might associate this with an active project for the agent
+    # project_id = get_current_project_for_agent(current_user.id) # Placeholder
+    new_location = FieldAgentLocation(user_id=current_user.id, lat=lat, lon=lon, timestamp=datetime.now())
+    db.session.add(new_location)
+    db.session.commit()
+    return jsonify({"success": True, "latitude": lat, "longitude": lon, "message": "Location updated successfully"})
 
 @app.route('/donor')
 @login_required
-@role_required('donor', 'mission_manager')
+@role_required('donor') # Only donors
 def donor():
+    # Example: Show total donations made by this donor
+    total_donations_by_user = db.session.query(func.sum(Donation.donation_size)).filter_by(project_id=None).scalar() # Simplified example
+    # In a real app, link donations to users
     donation_stats = {
-        'total_donations': 15000,
-        'projects_supported': 5,
-        'impact_score': 87,
-        'currency_trace': "USD → ZAR @ 15.2"
+        'total_donations': total_donations_by_user or 0,
+        'projects_supported': Project.query.count(), # Example: count all projects
+        'impact_score': random.randint(70, 95), # Placeholder
+        'currency_trace': "USD → ZAR @ 18.5" # Placeholder
     }
     return render_template('donor.html', donation_stats=donation_stats)
 
-# Updated Child Care route using ChildProfile model
 @app.route('/child_care')
 @login_required
-@role_required('child_care', 'mission_manager')
+@role_required('child_care') # Only child care personnel
 def child_care():
-    child_profiles = ChildProfile.query.all()
+    child_profiles = ChildProfile.query.all() # In a real app, filter by child care provider's assigned projects/children
     return render_template('child_care.html', child_profiles=child_profiles)
 
-# Add Child Profile route
 @app.route('/add_child_profile', methods=['GET', 'POST'])
 @login_required
-@role_required('child_care', 'mission_manager')
+@role_required('child_care')
 def add_child_profile():
     if request.method == 'POST':
         name = request.form.get('name')
@@ -187,99 +191,156 @@ def add_child_profile():
         health_status = request.form.get('health_status')
         priority = request.form.get('priority')
         notes = request.form.get('notes')
-        
+        current_lat = request.form.get('current_lat')
+        current_lon = request.form.get('current_lon')
+        # project_id = request.form.get('project_id') # If assigning to a project during creation
         if name and age:
-            new_profile = ChildProfile(
-                name=name,
-                age=int(age),
-                health_status=health_status,
-                priority=priority,
-                notes=notes
-            )
+            new_profile = ChildProfile(name=name, age=int(age), health_status=health_status, priority=priority, notes=notes,
+                                       current_lat=float(current_lat) if current_lat else None,
+                                       current_lon=float(current_lon) if current_lon else None)
             db.session.add(new_profile)
             db.session.commit()
             flash('Child profile added successfully!', 'success')
             return redirect(url_for('child_care'))
-        
         flash('Name and age are required!', 'danger')
-        
     return render_template('add_child_profile.html')
 
-# Unified Map Route (includes donation heatmap integrated)
-@app.route('/map')
-@login_required
-@role_required('field_agent', 'child_care', 'donor', 'mission_manager')
-def map_view():
-    fund_tracing = {
-        "origin": {"lat": -33.9249, "lon": 18.4241, "name": "Cape Town"},
-        "destination": {"lat": -29.8587, "lon": 31.0218, "name": "Durban"},
-        "donation_size": 5000,
-        "donation_need": "Medical Supplies"
-    }
-    resource_routes_db = ResourceRoute.query.all()
-    resource_routes = []
-    for route in resource_routes_db:
-        resource_routes.append({
-            "origin": {"lat": route.origin_lat, "lon": route.origin_lon},
-            "destination": {"lat": route.destination_lat, "lon": route.destination_lon},
-            "resource_type": route.resource_type,
-        })
-    child_locations_db = ChildLocation.query.all()
-    child_locations = []
-    for child in child_locations_db:
-        child_locations.append({
-            "lat": child.lat,
-            "lon": child.lon,
-            "name": child.name
-        })
-        
-    # Get field agent locations
-    field_agent_locations_db = FieldAgentLocation.query.order_by(
-        FieldAgentLocation.user_id, FieldAgentLocation.timestamp.desc()
-    ).all()
-    
-    # Dictionary to track the most recent location for each agent
-    latest_locations = {}
-    field_agent_locations = []
-    
-    for loc in field_agent_locations_db:
-        # Only add the most recent location for each agent
-        if loc.user_id not in latest_locations:
-            agent = User.query.get(loc.user_id)
-            latest_locations[loc.user_id] = True
-            field_agent_locations.append({
-                "lat": loc.lat,
-                "lon": loc.lon,
-                "name": agent.username if agent else f"Agent {loc.user_id}",
-                "timestamp": loc.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-            })
-    
-    donations = Donation.query.all()
-    donation_routes = []
-    heat_data = []  # For donation heatmap
-    for d in donations:
-        donation_routes.append({
-            "origin": {"lat": d.origin_lat, "lon": d.origin_lon},
-            "destination": {"lat": d.destination_lat, "lon": d.destination_lon},
-            "donation_size": d.donation_size,
-            "donation_need": d.donation_need
-        })
-        heat_data.append([d.destination_lat, d.destination_lon, d.donation_size])
-    return render_template("map.html",
-                           fund_tracing=fund_tracing,
-                           resource_routes=resource_routes,
-                           child_locations=child_locations,
-                           donation_routes=donation_routes,
-                           field_agent_locations=field_agent_locations,
-                           heat_data=heat_data)
-
+# Reworked Manager Dashboard to list projects
 @app.route('/manager_dashboard')
 @login_required
 @role_required('mission_manager')
 def manager_dashboard():
-    return render_template('manager_dashboard.html')
+    managed_projects = Project.query.filter_by(manager_id=current_user.id).order_by(Project.start_date.desc()).all()
+    return render_template('manager_dashboard.html', projects=managed_projects)
 
-# QR Code Scanner Route Example
+# New route for displaying a single project's details
+@app.route('/project/<int:project_id>')
+@login_required
+@role_required('mission_manager')
+def project_detail(project_id):
+    project = Project.query.get_or_404(project_id)
+    if project.manager_id != current_user.id:
+        flash("You are not authorized to view this project.", "danger")
+        return redirect(url_for('manager_dashboard'))
+
+    # Financials - Sum of donations for this project
+    project_donations_total_query = db.session.query(func.sum(Donation.donation_size)).filter_by(project_id=project.id).scalar()
+    project_donations_total = Decimal(str(project_donations_total_query)) if project_donations_total_query is not None else Decimal('0.00')
+    
+    project_budget_decimal = Decimal(str(project.budget)) if project.budget is not None else Decimal('0.00')
+
+    # DEBUG PRINTS
+    print(f"DEBUG: project_budget_decimal type: {type(project_budget_decimal)}, value: {project_budget_decimal}")
+    print(f"DEBUG: project_donations_total type: {type(project_donations_total)}, value: {project_donations_total}")
+
+    project_financials = {
+        'budget': project_budget_decimal,
+        'donations_received': project_donations_total,
+        'remaining_budget': project_budget_decimal - project_donations_total
+    }
+    print(f"DEBUG: remaining_budget type: {type(project_financials['remaining_budget'])}, value: {project_financials['remaining_budget']}") # DEBUG
+
+    # Map data for this specific project
+    project_resource_routes_query = ResourceRoute.query.filter_by(project_id=project.id).all()
+    project_resource_routes_serializable = [
+        {
+            "origin": {"lat": route.origin_lat, "lon": route.origin_lon},
+            "destination": {"lat": route.destination_lat, "lon": route.destination_lon},
+            "resource_type": route.resource_type,
+            "supply_quantity": route.supply_quantity
+        }
+        for route in project_resource_routes_query
+    ]
+
+    project_child_profiles = ChildProfile.query.filter_by(project_id=project.id).all()
+    project_agent_locations_query = FieldAgentLocation.query.filter_by(project_id=project.id).order_by(FieldAgentLocation.timestamp.desc()).all()
+    project_agent_locations_serializable = []
+    # To avoid sending full user objects, select needed fields, e.g., username
+    for loc in project_agent_locations_query:
+        agent_user = User.query.get(loc.user_id)
+        project_agent_locations_serializable.append({
+            "lat": loc.lat,
+            "lon": loc.lon,
+            "name": agent_user.username if agent_user else f"Agent {loc.user_id}",
+            "timestamp": loc.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        })
+
+    # For child locations on map, use current_lat/lon from ChildProfile if available
+    project_child_map_locations = [
+        {"lat": cp.current_lat, "lon": cp.current_lon, "name": cp.name}
+        for cp in project_child_profiles if cp.current_lat and cp.current_lon
+    ]
+    project_heat_data = [
+        [d.destination_lat, d.destination_lon, d.donation_size]
+        for d in Donation.query.filter_by(project_id=project.id).all()
+    ]
+
+    return render_template('project_detail.html',
+                           project=project,
+                           financials=project_financials,
+                           resource_routes=project_resource_routes_serializable, # Use serializable version
+                           child_locations=project_child_map_locations, # Use profiles with lat/lon
+                           field_agent_locations=project_agent_locations_serializable, # Use serializable version
+                           heat_data=project_heat_data)
+
+# Unified Map Route (Global View)
+@app.route('/map')
+@login_required # All authenticated users can see the global map
+def map_view():
+    # This remains mostly the same, fetching all data for a global overview
+    fund_tracing_example = {
+        "origin": {"lat": -33.9249, "lon": 18.4241, "name": "Global HQ"},
+        "destination": {"lat": -29.8587, "lon": 31.0218, "name": "Regional Office"},
+        "donation_size": 25000,
+        "donation_need": "Operational Support"
+    }
+    all_resource_routes_query = ResourceRoute.query.all()
+    all_resource_routes_serializable = [
+        {
+            "origin": {"lat": route.origin_lat, "lon": route.origin_lon},
+            "destination": {"lat": route.destination_lat, "lon": route.destination_lon},
+            "resource_type": route.resource_type,
+            "supply_quantity": route.supply_quantity
+        }
+        for route in all_resource_routes_query
+    ]
+
+    all_child_profiles_with_loc = ChildProfile.query.filter(ChildProfile.current_lat != None, ChildProfile.current_lon != None).all()
+    all_child_map_locations = [
+        {"lat": cp.current_lat, "lon": cp.current_lon, "name": cp.name}
+        for cp in all_child_profiles_with_loc
+    ]
+    all_field_agent_locations = FieldAgentLocation.query.order_by(FieldAgentLocation.user_id, FieldAgentLocation.timestamp.desc()).all()
+    latest_agent_locations_map = []
+    seen_agents = set()
+    for loc in all_field_agent_locations:
+        if loc.user_id not in seen_agents:
+            agent = User.query.get(loc.user_id)
+            latest_agent_locations_map.append({
+                "lat": loc.lat, "lon": loc.lon,
+                "name": agent.username if agent else f"Agent {loc.user_id}",
+                "timestamp": loc.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            })
+            seen_agents.add(loc.user_id)
+    
+    all_donations = Donation.query.all()
+    all_donation_routes_map = [
+        {"origin": {"lat": d.origin_lat, "lon": d.origin_lon},
+         "destination": {"lat": d.destination_lat, "lon": d.destination_lon},
+         "donation_size": d.donation_size, "donation_need": d.donation_need}
+        for d in all_donations
+    ]
+    all_heat_data = [[d.destination_lat, d.destination_lon, d.donation_size] for d in all_donations]
+
+    return render_template("map.html",
+                           fund_tracing=fund_tracing_example, # Example global fund trace
+                           resource_routes=all_resource_routes_serializable, # Use serializable version
+                           child_locations=all_child_map_locations,
+                           donation_routes=all_donation_routes_map,
+                           field_agent_locations=latest_agent_locations_map,
+                           heat_data=all_heat_data,
+                           is_global_map=True) # Flag to distinguish from project map
+
 @app.route('/qr', methods=['GET', 'POST'])
 @login_required
 @role_required('field_agent', 'mission_manager')
@@ -307,115 +368,34 @@ def qr_scanner():
         return redirect(url_for('qr_scanner'))
     return render_template('qr.html')
 
-from flask_socketio import SocketIO, join_room, leave_room, emit
+from flask_socketio import SocketIO # Removed other imports as they are in messaging module
+# Initialize SocketIO
+os.environ['EVENTLET_NO_GREENDNS'] = 'yes' # For Python 3.12 with eventlet
+try:
+    import eventlet
+    eventlet.monkey_patch()
+    async_mode = 'eventlet'
+except (ImportError, AttributeError):
+    async_mode = 'threading'
+socketio = SocketIO(app, async_mode=async_mode)
 
-# After app initialization:
-socketio = SocketIO(app)
+# Initialize the messaging module
+from messaging import init_messaging
+from messaging.scheduler import MessageScheduler
 
-# A simple event handler for receiving messages:
-@socketio.on('send_message')
-def handle_send_message(data):
-    """
-    Expected data: {
-      'sender_id': <sender_id>,
-      'recipient_id': <recipient_id>,  # optional for one-to-one
-      'channel': <channel>,            # optional for group chat
-      'content': <message content>,
-      'priority': <optional priority>
-    }
-    """
-    # Save the message to the database
-    sender_id = data.get('sender_id')
-    recipient_id = data.get('recipient_id')
-    channel = data.get('channel')
-    content = data.get('content')
-    priority = data.get('priority', 'Normal')
-    
-    message = Message(
-        sender_id=sender_id,
-        recipient_id=recipient_id,
-        channel=channel,
-        content=content,
-        priority=priority,
-        timestamp=datetime.now()
-    )
-    db.session.add(message)
-    db.session.commit()
-    
-    # Emit the message to appropriate recipients
-    if channel:
-        # Group message, send to the channel
-        emit('receive_message', {
-            'id': message.id,
-            'sender_id': message.sender_id,
-            'sender_name': User.query.get(sender_id).username,
-            'content': message.content,
-            'timestamp': message.timestamp.strftime('%H:%M'),
-            'priority': message.priority
-        }, room=channel)
-    elif recipient_id:
-        # Direct message, send to both sender and recipient
-        for user_id in [sender_id, recipient_id]:
-            emit('receive_message', {
-                'id': message.id,
-                'sender_id': message.sender_id,
-                'sender_name': User.query.get(sender_id).username,
-                'content': message.content,
-                'timestamp': message.timestamp.strftime('%H:%M'),
-                'priority': message.priority
-            }, room=str(user_id))
-            
-# Route for chat functionality
-@app.route('/chat')
-@login_required
-def chat():
-    # Get the list of users to chat with
-    users = User.query.filter(User.id != current_user.id).all()
-    
-    # Get channels/groups
-    channels = ["Emergency Response Team", "Resource Management", "Field Operations"]
-    
-    # Get recent messages for the user
-    received_messages = Message.query.filter(
-        (Message.recipient_id == current_user.id) | 
-        (Message.channel.in_(channels))
-    ).order_by(Message.timestamp.desc()).limit(20).all()
-    
-    sent_messages = Message.query.filter_by(
-        sender_id=current_user.id
-    ).order_by(Message.timestamp.desc()).limit(20).all()
-    
-    # Combine and sort messages by timestamp
-    messages = sorted(
-        list(received_messages) + list(sent_messages),
-        key=lambda x: x.timestamp,
-        reverse=True
-    )[:20]  # Get the 20 most recent messages
-    
-    return render_template('chat.html', users=users, channels=channels, messages=messages)
+init_messaging(app, socketio) # Initialize messaging blueprint and socket events
 
-# Connect user to their personal room when they connect
-@socketio.on('connect')
-def on_connect():
-    join_room(str(current_user.id))
-    print(f"User {current_user.username} connected")
-    
-# Have user join a channel room
-@socketio.on('join_channel')
-def on_join_channel(data):
-    channel = data['channel']
-    join_room(channel)
-    print(f"User {current_user.username} joined channel {channel}")
-    
-# Disconnect from personal room when they disconnect
-@socketio.on('disconnect')
-def on_disconnect():
-    print(f"User {current_user.username} disconnected")
+# Pass app.app_context() to the MessageScheduler
+message_scheduler = MessageScheduler(socketio, app.app_context)
+message_scheduler.start()
+
+@app.teardown_appcontext
+def shutdown_scheduler(exception=None):
+    message_scheduler.stop()
 
 # Import CLI commands to register them
 import cli  # noqa
 
-# Add this after app initialization to run with SocketIO
 if __name__ == '__main__':
     socketio.run(app, debug=True)
 

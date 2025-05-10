@@ -1,79 +1,80 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="fade-in">
+<div class="dashboard-container">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-hand-holding-usd me-2"></i>Donor Dashboard</h2>
-    <div class="text-muted">
-      <i class="fas fa-user-circle me-2"></i>{{ current_user.username }}
-    </div>
+    <div class="text-muted"><i class="fas fa-user-circle me-2"></i>{{ current_user.username }}</div>
   </div>
 
   <!-- Stats Cards -->
-  <div class="row mb-4">
+  <div class="row g-3 mb-4">
     <div class="col-md-4">
-      <div class="stats-card">
+      <div class="card stat-card">
         <h3>${{ "{:,.2f}".format(donation_stats.total_donations) }}</h3>
         <p>Total Donations</p>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="stats-card">
+      <div class="card stat-card">
         <h3>{{ donation_stats.projects_supported }}</h3>
         <p>Projects Supported</p>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="stats-card">
+      <div class="card stat-card">
         <h3>{{ donation_stats.impact_score }}%</h3>
         <p>Impact Score</p>
       </div>
     </div>
   </div>
 
-  <!-- Currency Tracing -->
-  <div class="card mb-4">
-    <div class="card-header">
-      <i class="fas fa-exchange-alt me-2"></i>Currency Tracing
-    </div>
-    <div class="card-body">
-      <div class="d-flex align-items-center">
-        <div class="flex-grow-1">
-          <p class="mb-0">{{ donation_stats.currency_trace }}</p>
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <!-- Interactive Map & Dashboards -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-globe me-2"></i>Interactive Map & Impact</h5>
         </div>
-        <div class="ms-3">
-          <i class="fas fa-chart-line fa-2x text-primary"></i>
+        <div class="card-body">
+          <div class="ratio ratio-16x9 mb-3">
+            <div id="map" class="rounded"></div>
+          </div>
+          <div class="alert alert-info">
+            <p class="mb-0"><strong>Currency Tracing:</strong> {{ donation_stats.currency_trace }} <i class="fas fa-chart-line ms-2"></i></p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Interactive Map & Dashboards -->
-  <div class="card">
-    <div class="card-header">
-      <i class="fas fa-globe me-2"></i>Interactive Map & Dashboards
-    </div>
-    <div class="card-body">
-      <div class="row">
-        <div class="col-md-8">
-          <div class="ratio ratio-16x9">
-            <div id="map" class="rounded"></div>
-          </div>
+    
+    <div class="col-lg-4">
+      <!-- Quick Actions -->
+      <div class="card mb-3">
+        <div class="card-header"><h5 class="mb-0">Quick Actions</h5></div>
+        <div class="card-body d-grid gap-2">
+          <button class="btn btn-primary"><i class="fas fa-donate me-2"></i>Make Donation</button>
+          <button class="btn btn-outline-primary"><i class="fas fa-file-alt me-2"></i>View Reports</button>
+          <button class="btn btn-outline-primary"><i class="fas fa-bell me-2"></i>Donation Alerts</button>
         </div>
-        <div class="col-md-4">
-          <div class="list-group">
-            <a href="#" class="list-group-item list-group-item-action active">
-              <i class="fas fa-map-marker-alt me-2"></i>Donation Impact Map
-            </a>
-            <a href="#" class="list-group-item list-group-item-action">
-              <i class="fas fa-chart-bar me-2"></i>Project Analytics
-            </a>
-            <a href="#" class="list-group-item list-group-item-action">
-              <i class="fas fa-users me-2"></i>Beneficiary Stories
-            </a>
-            <a href="#" class="list-group-item list-group-item-action">
-              <i class="fas fa-file-alt me-2"></i>Impact Reports
-            </a>
-          </div>
+      </div>
+      
+      <!-- Donation Insights -->
+      <div class="card">
+        <div class="card-header"><h5 class="mb-0">Donation Insights</h5></div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <strong>Project Analytics</strong>
+              <br><small>Track the impact of your donations</small>
+            </li>
+            <li class="list-group-item">
+              <strong>Beneficiary Stories</strong>
+              <br><small>See how your donations are changing lives</small>
+            </li>
+            <li class="list-group-item">
+              <strong>Impact Reports</strong>
+              <br><small>Detailed quarterly impact assessments</small>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
