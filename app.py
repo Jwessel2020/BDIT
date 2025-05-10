@@ -370,13 +370,7 @@ def qr_scanner():
 
 from flask_socketio import SocketIO # Removed other imports as they are in messaging module
 # Initialize SocketIO
-os.environ['EVENTLET_NO_GREENDNS'] = 'yes' # For Python 3.12 with eventlet
-try:
-    import eventlet
-    eventlet.monkey_patch()
-    async_mode = 'eventlet'
-except (ImportError, AttributeError):
-    async_mode = 'threading'
+async_mode = 'threading'
 socketio = SocketIO(app, async_mode=async_mode)
 
 # Initialize the messaging module
