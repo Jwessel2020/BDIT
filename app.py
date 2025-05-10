@@ -133,7 +133,7 @@ def index():
 
 @app.route('/field_agent')
 @login_required
-@role_required('field_agent') # Only field agents
+@role_required('field_agent', 'mission_manager') # MODIFIED: Allow mission_manager
 def field_agent():
     agent_location = FieldAgentLocation.query.filter_by(user_id=current_user.id).order_by(FieldAgentLocation.timestamp.desc()).first()
     gps_data = {"latitude": -30.5595, "longitude": 22.9375} # Default
@@ -161,22 +161,55 @@ def update_location():
 
 @app.route('/donor')
 @login_required
-@role_required('donor') # Only donors
+@role_required('donor', 'mission_manager')
 def donor():
-    # Example: Show total donations made by this donor
-    total_donations_by_user = db.session.query(func.sum(Donation.donation_size)).filter_by(project_id=None).scalar() # Simplified example
-    # In a real app, link donations to users
+    # Fetch donations made by the current user
+    user_donations = Donation.query.filter_by(donor_id=current_user.id).order_by(Donation.timestamp.asc()).all()
+
+    # Data for Donation History (Time-Series)
+    donation_history_timestamps = []
+    cumulative_donor_donations = []
+    current_donor_cumulative = Decimal('0.00')
+    total_donations_by_user_value = Decimal('0.00')
+
+    for don in user_donations:
+        donation_history_timestamps.append(don.timestamp.strftime('%Y-%m-%d'))
+        current_donor_cumulative += Decimal(str(don.donation_size))
+        cumulative_donor_donations.append(float(current_donor_cumulative))
+        total_donations_by_user_value += Decimal(str(don.donation_size))
+
+    # Data for Donations by Project (Pie Chart)
+    donations_by_project_data = {}
+    for don in user_donations:
+        if don.project_id:
+            project_name = don.project.name if don.project else "Unknown Project"
+            donations_by_project_data[project_name] = donations_by_project_data.get(project_name, Decimal('0.00')) + Decimal(str(don.donation_size))
+        else:
+            donations_by_project_data["General Aid (Unassigned)"] = donations_by_project_data.get("General Aid (Unassigned)", Decimal('0.00')) + Decimal(str(don.donation_size))
+    
+    project_labels = list(donations_by_project_data.keys())
+    project_values = [float(val) for val in donations_by_project_data.values()]
+
+    # Original donation_stats (can be simplified or enhanced)
+    # We now have a more accurate total_donations_by_user_value
     donation_stats = {
-        'total_donations': total_donations_by_user or 0,
-        'projects_supported': Project.query.count(), # Example: count all projects
-        'impact_score': random.randint(70, 95), # Placeholder
+        'total_donations': float(total_donations_by_user_value),
+        'projects_supported': len(set(don.project_id for don in user_donations if don.project_id)), # Count unique projects supported
+        'impact_score': random.randint(70, 95), # Placeholder, can be made more sophisticated
         'currency_trace': "USD → ZAR @ 18.5" # Placeholder
     }
-    return render_template('donor.html', donation_stats=donation_stats)
+
+    return render_template('donor.html', 
+                           donation_stats=donation_stats,
+                           donation_history_timestamps=donation_history_timestamps,
+                           cumulative_donor_donations=cumulative_donor_donations,
+                           project_labels=project_labels,
+                           project_values=project_values
+                           )
 
 @app.route('/child_care')
 @login_required
-@role_required('child_care') # Only child care personnel
+@role_required('child_care', 'mission_manager') # MODIFIED: Allow mission_manager
 def child_care():
     child_profiles = ChildProfile.query.all() # In a real app, filter by child care provider's assigned projects/children
     return render_template('child_care.html', child_profiles=child_profiles)
@@ -211,7 +244,39 @@ def add_child_profile():
 @role_required('mission_manager')
 def manager_dashboard():
     managed_projects = Project.query.filter_by(manager_id=current_user.id).order_by(Project.start_date.desc()).all()
-    return render_template('manager_dashboard.html', projects=managed_projects)
+
+    # Data for Overall Project Status Pie Chart
+    status_counts = {
+        'Planning': 0, 'Ongoing': 0, 'Completed': 0, 'On Hold': 0, 'Other': 0
+    }
+    for project in managed_projects:
+        if project.status in status_counts:
+            status_counts[project.status] += 1
+        else:
+            status_counts['Other'] += 1 # Catch any other statuses
+    
+    chart_status_labels = [status for status, count in status_counts.items() if count > 0]
+    chart_status_values = [count for status, count in status_counts.items() if count > 0]
+
+    # Data for Total Portfolio Financials Bar Chart
+    total_budget_all_projects = Decimal('0.00')
+    total_donations_all_projects = Decimal('0.00')
+
+    for project in managed_projects:
+        total_budget_all_projects += Decimal(str(project.budget)) if project.budget else Decimal('0.00')
+        project_donations = db.session.query(func.sum(Donation.donation_size)).filter_by(project_id=project.id).scalar()
+        total_donations_all_projects += Decimal(str(project_donations)) if project_donations else Decimal('0.00')
+
+    portfolio_financial_labels = ['Total Budget', 'Total Donations Received']
+    portfolio_financial_values = [float(total_budget_all_projects), float(total_donations_all_projects)]
+
+    return render_template('manager_dashboard.html', 
+                           projects=managed_projects,
+                           status_labels=chart_status_labels,
+                           status_values=chart_status_values,
+                           portfolio_financial_labels=portfolio_financial_labels,
+                           portfolio_financial_values=portfolio_financial_values
+                           )
 
 # New route for displaying a single project's details
 @app.route('/project/<int:project_id>')
@@ -275,13 +340,25 @@ def project_detail(project_id):
         for d in Donation.query.filter_by(project_id=project.id).all()
     ]
 
+    # Prepare data for Donation Trend chart
+    donations_for_project = Donation.query.filter_by(project_id=project.id).order_by(Donation.timestamp.asc()).all()
+    donation_timestamps = []
+    cumulative_donations = []
+    current_cumulative = Decimal('0.00')
+    for don in donations_for_project:
+        donation_timestamps.append(don.timestamp.strftime('%Y-%m-%d')) # Format for chart
+        current_cumulative += Decimal(str(don.donation_size))
+        cumulative_donations.append(float(current_cumulative)) # Plotly prefers float
+
     return render_template('project_detail.html',
                            project=project,
                            financials=project_financials,
-                           resource_routes=project_resource_routes_serializable, # Use serializable version
-                           child_locations=project_child_map_locations, # Use profiles with lat/lon
-                           field_agent_locations=project_agent_locations_serializable, # Use serializable version
-                           heat_data=project_heat_data)
+                           resource_routes=project_resource_routes_serializable, 
+                           child_locations=project_child_map_locations, 
+                           field_agent_locations=project_agent_locations_serializable, 
+                           heat_data=project_heat_data,
+                           donation_timestamps=donation_timestamps, # NEW data for chart
+                           cumulative_donations=cumulative_donations) # NEW data for chart
 
 # Unified Map Route (Global View)
 @app.route('/map')

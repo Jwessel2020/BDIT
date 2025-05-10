@@ -9,89 +9,131 @@
   <!-- Stats Cards -->
   <div class="row g-3 mb-4">
     <div class="col-md-4">
-      <div class="card stat-card">
+      <div class="card stat-card h-100">
         <h3>${{ "{:,.2f}".format(donation_stats.total_donations) }}</h3>
-        <p>Total Donations</p>
+        <p>My Total Donations</p>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card stat-card">
+      <div class="card stat-card h-100">
         <h3>{{ donation_stats.projects_supported }}</h3>
-        <p>Projects Supported</p>
+        <p>Projects I've Supported</p>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card stat-card">
+      <div class="card stat-card h-100">
         <h3>{{ donation_stats.impact_score }}%</h3>
-        <p>Impact Score</p>
+        <p>My Impact Score (Example)</p>
       </div>
     </div>
   </div>
 
   <div class="row g-3">
-    <div class="col-lg-8">
-      <!-- Interactive Map & Dashboards -->
-      <div class="card">
+    <div class="col-lg-8 mb-4">
+      <!-- Donation History Chart -->
+      <div class="card h-100">
         <div class="card-header">
-          <h5 class="mb-0"><i class="fas fa-globe me-2"></i>Interactive Map & Impact</h5>
+          <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>My Donation History</h5>
         </div>
         <div class="card-body">
-          <div class="ratio ratio-16x9 mb-3">
-            <div id="map" class="rounded"></div>
-          </div>
-          <div class="alert alert-info">
-            <p class="mb-0"><strong>Currency Tracing:</strong> {{ donation_stats.currency_trace }} <i class="fas fa-chart-line ms-2"></i></p>
-          </div>
+          <div id="donationHistoryChart" style="width:100%; height:350px;"></div>
+          {% if not donation_history_timestamps %}
+          <p class="text-muted text-center mt-3">No donation history to display.</p>
+          {% endif %}
         </div>
       </div>
     </div>
     
-    <div class="col-lg-4">
-      <!-- Quick Actions -->
-      <div class="card mb-3">
-        <div class="card-header"><h5 class="mb-0">Quick Actions</h5></div>
-        <div class="card-body d-grid gap-2">
-          <button class="btn btn-primary"><i class="fas fa-donate me-2"></i>Make Donation</button>
-          <button class="btn btn-outline-primary"><i class="fas fa-file-alt me-2"></i>View Reports</button>
-          <button class="btn btn-outline-primary"><i class="fas fa-bell me-2"></i>Donation Alerts</button>
+    <div class="col-lg-4 mb-4">
+      <!-- Donations by Project Chart -->
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-pie-chart me-2"></i>My Donations by Project</h5>
         </div>
-      </div>
-      
-      <!-- Donation Insights -->
-      <div class="card">
-        <div class="card-header"><h5 class="mb-0">Donation Insights</h5></div>
         <div class="card-body">
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item">
-              <strong>Project Analytics</strong>
-              <br><small>Track the impact of your donations</small>
-            </li>
-            <li class="list-group-item">
-              <strong>Beneficiary Stories</strong>
-              <br><small>See how your donations are changing lives</small>
-            </li>
-            <li class="list-group-item">
-              <strong>Impact Reports</strong>
-              <br><small>Detailed quarterly impact assessments</small>
-            </li>
-          </ul>
+          <div id="donationsByProjectChart" style="width:100%; height:350px;"></div>
+          {% if not project_labels %}
+          <p class="text-muted text-center mt-3">No project-specific donations to display.</p>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
+
+  <div class="row g-3">
+      <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Additional Info</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0"><strong>Currency Tracing Example:</strong> {{ donation_stats.currency_trace }} <i class="fas fa-search-dollar ms-2"></i></p>
+                <!-- Future: Table of individual donations by this user -->
+            </div>
+          </div>
+      </div>
+  </div>
+
 </div>
 
-<!-- Leaflet CSS and JS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endblock %}
 
+{% block scripts %}
+{{ super() }}
 <script>
-  // Initialize the map
-  var map = L.map('map').setView([-30, 25], 5);
-  
-  // Add OpenStreetMap tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-  }).addTo(map);
+if (typeof Plotly !== 'undefined') {
+    // Donation History Line Chart
+    const historyTimestamps = {{ donation_history_timestamps | tojson }};
+    const cumulativeHistory = {{ cumulative_donor_donations | tojson }};
+    if (historyTimestamps && historyTimestamps.length > 0 && document.getElementById('donationHistoryChart')) {
+        var historyTrace = {
+            x: historyTimestamps,
+            y: cumulativeHistory,
+            mode: 'lines+markers',
+            type: 'scatter',
+            name: 'Cumulative Donations',
+            line: {shape: 'spline', color: '#2ecc71'}, // Green for positive financial trend
+            marker: {color: '#2ecc71'}
+        };
+        var historyLayout = {
+            height: 350,
+            title: 'My Cumulative Donations Over Time',
+            xaxis: { title: 'Date', type: 'date' },
+            yaxis: { title: 'Cumulative Amount ($)', tickprefix: '$' },
+            margin: { l: 60, r: 30, b: 50, t: 50, pad: 4 },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        var config = {responsive: true, displaylogo: false};
+        Plotly.newPlot('donationHistoryChart', [historyTrace], historyLayout, config);
+    }
+
+    // Donations by Project Pie Chart
+    const projectLabels = {{ project_labels | tojson }};
+    const projectValues = {{ project_values | tojson }};
+    if (projectLabels && projectLabels.length > 0 && document.getElementById('donationsByProjectChart')) {
+        var projectPieData = [{
+            values: projectValues,
+            labels: projectLabels,
+            type: 'pie',
+            hole: .4,
+            textinfo: "label+percent",
+            textposition: 'inside',
+            automargin: true
+        }];
+        var projectPieLayout = {
+            height: 350,
+            title: 'Distribution of My Donations',
+            margin: {"t": 50, "b": 20, "l": 20, "r": 20},
+            showlegend: true,
+            legend: {orientation: "h", yanchor: "bottom", y: -0.3, xanchor: "center", x: 0.5},
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        Plotly.newPlot('donationsByProjectChart', projectPieData, projectPieLayout, config);
+    }
+}
 </script>
 {% endblock %}

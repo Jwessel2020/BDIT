@@ -54,6 +54,41 @@
         </div>
     </div>
 
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Budget Utilization</div>
+                <div class="card-body">
+                    <div id="budgetGaugeChart" style="width:100%;height:250px;"></div>
+                    {% if not financials or financials.budget == 0 %}
+                    <p class="text-muted text-center mt-3">Budget data not available or budget is zero.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Goal Progress</div>
+                <div class="card-body">
+                    <div id="goalProgressChart" style="width:100%;height:250px;"></div>
+                    {% if not project.goal_target_value or project.goal_target_value == 0 %}
+                    <p class="text-muted text-center mt-3">Goal target not set or is zero.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">Donation Trend</div>
+        <div class="card-body">
+            <div id="donationTrendChart" style="width:100%;height:400px;"></div>
+            {% if not donation_timestamps %}
+            <p class="text-muted text-center mt-3">No donation data available to display trend.</p>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Placeholder for Map Integration -->
     
     <div class="card mb-4">
@@ -195,6 +230,130 @@ if (typeof L !== 'undefined' && document.getElementById('projectDetailMap')) {
     {% if heat_data %}
         var heat = L.heatLayer({{ heat_data | tojson }}, {radius: 25}).addTo(map);
     {% endif %}
+}
+
+// NEW: JavaScript for Donation Trend Chart using Plotly.js
+if (typeof Plotly !== 'undefined' && document.getElementById('donationTrendChart')) {
+    const timestamps = {{ donation_timestamps | tojson }};
+    const cumulativeDonations = {{ cumulative_donations | tojson }};
+
+    if (timestamps && timestamps.length > 0 && cumulativeDonations && cumulativeDonations.length > 0) {
+        var trace1 = {
+            x: timestamps,
+            y: cumulativeDonations,
+            mode: 'lines+markers',
+            type: 'scatter',
+            name: 'Cumulative Donations',
+            line: {shape: 'spline', color: '#4361ee'},
+            marker: {color: '#4361ee'}
+        };
+
+        var layout = {
+            title: 'Cumulative Donations Over Time',
+            xaxis: {
+                title: 'Date',
+                type: 'date'
+            },
+            yaxis: {
+                title: 'Cumulative Amount ($)',
+                tickprefix: '$'
+            },
+            margin: { l: 60, r: 30, b: 50, t: 50, pad: 4 }, // Adjusted margins
+            hovermode: 'closest',
+            paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
+            plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
+            font: {
+                family: 'Segoe UI, system-ui, -apple-system, sans-serif',
+                color: '#2c3e50' // Match body text color
+            }
+        };
+        
+        var config = {responsive: true, displaylogo: false}
+
+        Plotly.newPlot('donationTrendChart', [trace1], layout, config);
+    }
+}
+
+// NEW: JavaScript for Budget Gauge Chart
+if (typeof Plotly !== 'undefined' && document.getElementById('budgetGaugeChart')) {
+    const budget = {{ financials.budget | default(0) | tojson }};
+    const donationsReceived = {{ financials.donations_received | default(0) | tojson }};
+
+    if (budget > 0) {
+        var budgetData = [
+            {
+                type: "indicator",
+                mode: "gauge+number",
+                value: parseFloat(donationsReceived),
+                title: { text: "Donations Received", font: { size: 18 } },
+                gauge: {
+                    axis: { range: [null, parseFloat(budget)], tickwidth: 1, tickcolor: "darkblue" },
+                    bar: { color: "#4361ee" },
+                    bgcolor: "white",
+                    borderwidth: 2,
+                    bordercolor: "#e0e0e0",
+                    steps: [
+                        { range: [0, parseFloat(budget) * 0.5], color: "#f8f9fa" },
+                        { range: [parseFloat(budget) * 0.5, parseFloat(budget) * 0.8], color: "#e9ecef" }
+                    ],
+                    threshold: {
+                        line: { color: "#e74c3c", width: 4 },
+                        thickness: 0.75,
+                        value: parseFloat(budget) // Target line at full budget
+                    }
+                },
+                number: { prefix: "$" }
+            }
+        ];
+
+        var budgetLayout = {
+            height: 250,
+            margin: { t: 25, r: 25, l: 25, b: 25 },
+            paper_bgcolor: "rgba(0,0,0,0)",
+            font: { color: "#2c3e50", family: "Segoe UI, system-ui, -apple-system, sans-serif" }
+        };
+        var config = {responsive: true, displaylogo: false};
+        Plotly.newPlot('budgetGaugeChart', budgetData, budgetLayout, config);
+    }
+}
+
+// NEW: JavaScript for Goal Progress Chart
+if (typeof Plotly !== 'undefined' && document.getElementById('goalProgressChart')) {
+    const goalTarget = {{ project.goal_target_value | default(0) | tojson }};
+    const goalCurrent = {{ project.goal_current_value | default(0) | tojson }};
+    const goalUnit = {{ project.goal_unit | default('') | tojson }};
+
+    if (parseFloat(goalTarget) > 0) {
+        var goalData = [
+            {
+                type: "indicator",
+                mode: "gauge+number",
+                value: parseFloat(goalCurrent),
+                title: { text: "Progress", font: { size: 18 } },
+                gauge: {
+                    axis: { range: [null, parseFloat(goalTarget)], tickwidth: 1, tickcolor: "darkblue" },
+                    bar: { color: "#10b981" }, // Green for progress
+                    bgcolor: "white",
+                    borderwidth: 2,
+                    bordercolor: "#e0e0e0",
+                    steps: [
+                        { range: [0, parseFloat(goalTarget) * 0.5], color: "#f8f9fa" },
+                        { range: [parseFloat(goalTarget) * 0.5, parseFloat(goalTarget) * 0.8], color: "#e9ecef" }
+                    ]
+                },
+                number: { suffix: " " + goalUnit }
+            }
+        ];
+
+        var goalLayout = {
+            height: 250,
+            margin: { t: 25, r: 25, l: 25, b: 25 },
+            paper_bgcolor: "rgba(0,0,0,0)",
+            font: { color: "#2c3e50", family: "Segoe UI, system-ui, -apple-system, sans-serif" }
+        };
+        var config = {responsive: true, displaylogo: false};
+        Plotly.newPlot('goalProgressChart', goalData, goalLayout, config);
+    }
 }
 </script>
 
