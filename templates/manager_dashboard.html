@@ -6,6 +6,36 @@
     <div class="text-muted"><i class="fas fa-user-circle me-2"></i>{{ current_user.username }}</div>
   </div>
 
+  <!-- Charts Row -->
+  <div class="row mb-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">
+          Overall Project Status
+        </div>
+        <div class="card-body">
+          <div id="projectStatusPieChart" style="width:100%; height:350px;"></div>
+          {% if not status_labels %}
+          <p class="text-muted text-center mt-3">No project status data to display.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">
+          Portfolio Financial Overview
+        </div>
+        <div class="card-body">
+          <div id="portfolioFinancialsBarChart" style="width:100%; height:350px;"></div>
+           {% if not portfolio_financial_labels %}
+          <p class="text-muted text-center mt-3">No financial data to display.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
   {% if projects %}
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
       {% for project in projects %}
@@ -77,4 +107,64 @@
     </button>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+if (typeof Plotly !== 'undefined') {
+    // Project Status Pie Chart
+    const statusLabels = {{ status_labels | tojson }};
+    const statusValues = {{ status_values | tojson }};
+    if (statusLabels && statusLabels.length > 0 && document.getElementById('projectStatusPieChart')) {
+        var pieData = [{
+            values: statusValues,
+            labels: statusLabels,
+            type: 'pie',
+            hole: .4, // for a donut chart look
+            textinfo: "label+percent",
+            textposition: 'inside',
+            marker: {
+                colors: ['#3498db', '#2ecc71', '#95a5a6', '#f39c12', '#e74c3c'] // Blue, Green, Grey, Orange, Red
+            }
+        }];
+
+        var pieLayout = {
+            height: 350,
+            margin: {"t": 20, "b": 20, "l": 20, "r": 20},
+            showlegend: true,
+            legend: {x: 1, y: 0.5},
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        var config = {responsive: true, displaylogo: false};
+        Plotly.newPlot('projectStatusPieChart', pieData, pieLayout, config);
+    }
+
+    // Portfolio Financials Bar Chart
+    const financialLabels = {{ portfolio_financial_labels | tojson }};
+    const financialValues = {{ portfolio_financial_values | tojson }};
+    if (financialLabels && financialLabels.length > 0 && document.getElementById('portfolioFinancialsBarChart')) {
+        var barData = [{
+            x: financialLabels,
+            y: financialValues,
+            type: 'bar',
+            marker: {
+                color: ['#2c3e50', '#4361ee'] // Dark grey/blue for budget, Primary blue for donations
+            }
+        }];
+
+        var barLayout = {
+            height: 350,
+            margin: {"t": 30, "b": 50, "l": 60, "r": 20},
+            yaxis: { title: 'Amount ($)', tickprefix: '$' },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        Plotly.newPlot('portfolioFinancialsBarChart', barData, barLayout, config);
+    }
+}
+</script>
 {% endblock %}

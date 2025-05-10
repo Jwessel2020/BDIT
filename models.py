@@ -51,8 +51,11 @@ class Donation(db.Model):
     destination_lon = db.Column(db.Float, nullable=False)
     donation_size = db.Column(db.Float, nullable=False)
     donation_need = db.Column(db.String(255), nullable=False)
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True) # Added
-    project = db.relationship('Project', backref=db.backref('donations', lazy='dynamic')) # Added
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
+    donor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # NEW: Link to donor (user)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    project = db.relationship('Project', backref=db.backref('donations', lazy='dynamic'))
+    donor = db.relationship('User', backref=db.backref('donations_made', lazy='dynamic')) # NEW: Relationship to User
 
     def __repr__(self):
         return f"<Donation {self.id}>"
