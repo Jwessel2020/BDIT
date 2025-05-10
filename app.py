@@ -133,7 +133,7 @@ def index():
 
 @app.route('/field_agent')
 @login_required
-@role_required('field_agent') # Only field agents
+@role_required('field_agent', 'mission_manager') # MODIFIED: Allow mission_manager
 def field_agent():
     agent_location = FieldAgentLocation.query.filter_by(user_id=current_user.id).order_by(FieldAgentLocation.timestamp.desc()).first()
     gps_data = {"latitude": -30.5595, "longitude": 22.9375} # Default
@@ -161,7 +161,7 @@ def update_location():
 
 @app.route('/donor')
 @login_required
-@role_required('donor') # Only donors
+@role_required('donor', 'mission_manager') # MODIFIED: Allow mission_manager
 def donor():
     # Example: Show total donations made by this donor
     total_donations_by_user = db.session.query(func.sum(Donation.donation_size)).filter_by(project_id=None).scalar() # Simplified example
@@ -176,7 +176,7 @@ def donor():
 
 @app.route('/child_care')
 @login_required
-@role_required('child_care') # Only child care personnel
+@role_required('child_care', 'mission_manager') # MODIFIED: Allow mission_manager
 def child_care():
     child_profiles = ChildProfile.query.all() # In a real app, filter by child care provider's assigned projects/children
     return render_template('child_care.html', child_profiles=child_profiles)
