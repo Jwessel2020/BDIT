@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-bullhorn me-2"></i>Crisis Response Dashboard</h2>
+    <div class="text-muted"><i class="fas fa-user-circle me-2"></i>{{ current_user.username }}</div>
+  </div>
+
+  <!-- Crisis List Section -->
+  <div class="row">
+    <div class="col-12">
+      <h4 class="mb-3">Active & Recent Crises</h4>
+      {% if crises %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+          {% for crisis in crises %}
+          <div class="col">
+            <div class="card h-100 crisis-card shadow-sm" data-crisis-id="{{ crisis.id }}">
+              <div class="card-header d-flex justify-content-between align-items-center 
+                {% if crisis.status == 'Active' %}bg-danger text-white
+                {% elif crisis.status == 'Monitoring' %}bg-warning text-dark
+                {% elif crisis.status == 'Resolved' %}bg-success text-white
+                {% else %}bg-light text-dark
+                {% endif %}">
+                <h5 class="card-title mb-0">{{ crisis.name }}</h5>
+                <span class="badge 
+                  {% if crisis.status == 'Active' %}bg-light text-danger
+                  {% elif crisis.status == 'Monitoring' %}bg-dark text-warning
+                  {% elif crisis.status == 'Resolved' %}bg-light text-success
+                  {% else %}bg-secondary
+                  {% endif %}">{{ crisis.status }}</span>
+              </div>
+              <div class="card-body">
+                <p class="card-text small text-muted">{{ crisis.description | truncate(150) }}</p>
+                <p class="card-text"><small class="text-muted">Start Date: {{ crisis.start_date.strftime('%Y-%m-%d') if crisis.start_date else 'N/A' }}</small></p>
+                {% if crisis.location_lat and crisis.location_lon %}
+                <p class="card-text small"><i class="fas fa-map-marker-alt me-1 text-danger"></i> Approx. Location: {{ crisis.location_lat }}, {{ crisis.location_lon }}</p>
+                {% endif %}
+              </div>
+              <div class="card-footer bg-white">
+                <button class="btn btn-primary btn-sm view-crisis-details-btn" data-crisis-id="{{ crisis.id }}">
+                  <i class="fas fa-eye me-1"></i>View Details
+                </button>
+                <!-- Future: Action buttons like "Allocate Resources" -->
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-info" role="alert">
+          No crises found or recorded yet.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <!-- Crisis Detail Section (Initially Hidden or Placeholder) -->
+  <div id="crisisDetailSection" class="mt-4" style="display: none;"> 
+    <h4 id="crisisDetailName"></h4>
+    <div class="row">
+        <div class="col-lg-7 mb-4">
+            <div class="card">
+                <div class="card-header">Crisis Map</div>
+                <div class="card-body">
+                    <div id="crisisDetailMap" style="height: 400px;"></div>
+                    <p class="text-muted small mt-2">Map will show crisis location, affected children, resource routes, and field agents.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5 mb-4">
+            <div class="card">
+                <div class="card-header">Quick Stats for Crisis</div>
+                <div class="card-body">
+                    <p>Children Assigned: <span id="crisisChildrenCount">N/A</span></p>
+                    <p>Resources Allocated: <span id="crisisResourcesCount">N/A</span></p>
+                    <p>Agents Involved: <span id="crisisAgentsCount">N/A</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">Children in this Crisis (Sorted by Urgency)</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" id="crisisChildrenTable">
+                            <thead><tr><th>Name</th><th>Urgency</th><th>Health</th><th>Actions</th></tr></thead>
+                            <tbody> <!-- Populated by JS --> </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">Resources for this Crisis</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" id="crisisResourcesTable">
+                            <thead><tr><th>Type</th><th>Qty</th><th>Status</th><th>Agent</th></tr></thead>
+                            <tbody> <!-- Populated by JS --> </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="btn btn-secondary" id="backToCrisisListBtn">Back to Crisis List</button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const crisisDetailSection = document.getElementById('crisisDetailSection');
+    const crisisDetailName = document.getElementById('crisisDetailName');
+    const crisisChildrenTableBody = document.querySelector("#crisisChildrenTable tbody");
+    const crisisResourcesTableBody = document.querySelector("#crisisResourcesTable tbody");
+    const crisisDetailMapDiv = document.getElementById('crisisDetailMap');
+    let crisisMap = null; // To store map instance
+    const crisisChildrenCountSpan = document.getElementById('crisisChildrenCount');
+    const crisisResourcesCountSpan = document.getElementById('crisisResourcesCount');
+    const crisisAgentsCountSpan = document.getElementById('crisisAgentsCount');
+
+    document.querySelectorAll('.view-crisis-details-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const crisisId = this.getAttribute('data-crisis-id');
+            
+            // Hide crisis list, show detail section 
+            document.querySelector('.row .col-12 h4.mb-3').parentNode.style.display = 'none';
+            document.querySelectorAll('.crisis-card').forEach(cc => cc.closest('.col').style.display = 'none');
+            crisisDetailSection.style.display = 'block';
+            
+            // Clear previous details and show loading state
+            crisisDetailName.textContent = `Loading details for Crisis ID: ${crisisId}...`;
+            crisisChildrenTableBody.innerHTML = '<tr><td colspan="4" class="text-center"><em>Loading children...</em></td></tr>';
+            crisisResourcesTableBody.innerHTML = '<tr><td colspan="4" class="text-center"><em>Loading resources...</em></td></tr>';
+            crisisChildrenCountSpan.textContent = '...';
+            crisisResourcesCountSpan.textContent = '...';
+            crisisAgentsCountSpan.textContent = '...';
+
+            // Initialize or clear map
+            if (crisisMap) { 
+                crisisMap.eachLayer(function (layer) {
+                    if (!!layer.toGeoJSON) { // Keep tile layer, remove others
+                        crisisMap.removeLayer(layer);
+                    }
+                });
+            } else {
+                crisisMap = L.map(crisisDetailMapDiv);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(crisisMap);
+            }
+
+            fetch(`/api/crisis/${crisisId}/details`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    crisisDetailName.textContent = data.name;
+                    crisisChildrenCountSpan.textContent = data.children_assigned_count;
+                    crisisResourcesCountSpan.textContent = data.resources_targeted_count;
+                    crisisAgentsCountSpan.textContent = data.agents_involved_count;
+
+                    // Populate children table
+                    crisisChildrenTableBody.innerHTML = ''; // Clear loading/previous
+                    if (data.children && data.children.length > 0) {
+                        data.children.forEach(child => {
+                            let row = crisisChildrenTableBody.insertRow();
+                            row.innerHTML = `
+                                <td>${child.name}</td>
+                                <td><span class="badge bg-danger">${child.urgency_score || 'N/A'}</span></td>
+                                <td>${child.health_status}</td>
+                                <td><button class="btn btn-xs btn-outline-info" title="View Child Profile (Future)"><i class="fas fa-eye"></i></button></td>
+                            `;
+                        });
+                    } else {
+                        crisisChildrenTableBody.innerHTML = '<tr><td colspan="4" class="text-center"><em>No children assigned to this crisis.</em></td></tr>';
+                    }
+
+                    // Populate resources table
+                    crisisResourcesTableBody.innerHTML = ''; // Clear loading/previous
+                    if (data.resources && data.resources.length > 0) {
+                        data.resources.forEach(resource => {
+                            let row = crisisResourcesTableBody.insertRow();
+                            row.innerHTML = `
+                                <td>${resource.resource_type}</td>
+                                <td>${resource.supply_quantity || 'N/A'}</td>
+                                <td><span class="badge bg-info">${resource.status || 'N/A'}</span></td>
+                                <td>${resource.assigned_agent || 'N/A'}</td>
+                            `;
+                        });
+                    } else {
+                        crisisResourcesTableBody.innerHTML = '<tr><td colspan="4" class="text-center"><em>No resources specifically targeted for this crisis.</em></td></tr>';
+                    }
+
+                    // Update map
+                    // Clear previous markers/layers first
+                    if (crisisMap) {
+                        crisisMap.eachLayer(function (layer) {
+                            // Do not remove the tile layer
+                            if (layer instanceof L.TileLayer) {
+                                return;
+                            }
+                            crisisMap.removeLayer(layer);
+                        });
+                    }
+
+                    let mapBounds = []; // To collect bounds for fitting the map view
+
+                    if (data.location_lat && data.location_lon) {
+                        const crisisLatLng = [data.location_lat, data.location_lon];
+                        L.marker(crisisLatLng, { 
+                            icon: L.icon({ iconUrl: '{{ url_for("static", filename="images/crisis_icon.png") }}', iconSize: [32, 32], iconAnchor: [16, 32] }) // Example custom crisis icon
+                        }).addTo(crisisMap)
+                            .bindPopup(`<b>${data.name}</b><br>Status: ${data.status}<br><small>${data.description || 'Crisis Location'}</small>`)
+                            .openPopup();
+                        mapBounds.push(crisisLatLng);
+                        crisisMap.setView(crisisLatLng, 8); // Zoom in a bit more for crisis center
+                    } else {
+                        crisisMap.setView([-25.0, 29.0], 5); // Default view if no crisis location
+                    }
+
+                    // Add child markers to map
+                    if (data.children && data.children.length > 0) {
+                        data.children.forEach(child => {
+                            if (child.lat && child.lon) {
+                                const childLatLng = [child.lat, child.lon];
+                                L.marker(childLatLng, {
+                                    icon: L.icon({ iconUrl: '{{ url_for("static", filename="images/child_icon.png") }}', iconSize: [25, 25], iconAnchor: [12, 25] }) // Example custom child icon
+                                }).addTo(crisisMap)
+                                    .bindPopup(`<b>${child.name}</b><br>Urgency: ${child.urgency_score}<br>Health: ${child.health_status}`);
+                                mapBounds.push(childLatLng);
+                            }
+                        });
+                    }
+
+                    // Add resource route polylines to map
+                    if (data.resources && data.resources.length > 0) {
+                        data.resources.forEach(resource => {
+                            if (resource.origin_lat && resource.origin_lon && resource.destination_lat && resource.destination_lon) {
+                                const latlngs = [
+                                    [resource.origin_lat, resource.origin_lon],
+                                    [resource.destination_lat, resource.destination_lon]
+                                ];
+                                let lineColor = 'gray';
+                                if (resource.status === 'In Transit') lineColor = 'orange';
+                                else if (resource.status === 'Delivered') lineColor = 'green';
+                                else if (resource.status === 'Allocated') lineColor = 'blue';
+
+                                L.polyline(latlngs, { color: lineColor, weight: 3 }).addTo(crisisMap)
+                                    .bindPopup(`<b>Resource: ${resource.resource_type}</b><br>Qty: ${resource.supply_quantity}<br>Status: ${resource.status}<br>Agent: ${resource.assigned_agent}`);
+                                mapBounds.push([resource.origin_lat, resource.origin_lon]);
+                                mapBounds.push([resource.destination_lat, resource.destination_lon]);
+                            }
+                        });
+                    }
+                    
+                    // Fit map to bounds if any markers/routes were added
+                    if (mapBounds.length > 0) {
+                        crisisMap.fitBounds(mapBounds, { padding: [50, 50] });
+                    }
+                    
+                    // FUTURE: Add field agent markers for agents involved in these routes
+
+                })
+                .catch(error => {
+                    console.error("Error fetching crisis details:", error);
+                    crisisDetailName.textContent = 'Error loading details.';
+                    crisisChildrenTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger"><em>Error: ${error.message}</em></td></tr>`;
+                    crisisResourcesTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger"><em>Error: ${error.message}</em></td></tr>`;
+                });
+        });
+    });
+
+    const backToCrisisListBtn = document.getElementById('backToCrisisListBtn');
+    if (backToCrisisListBtn) {
+        backToCrisisListBtn.addEventListener('click', function() {
+            crisisDetailSection.style.display = 'none';
+            document.querySelector('.row .col-12 h4.mb-3').parentNode.style.display = 'block';
+             document.querySelectorAll('.crisis-card').forEach(cc => cc.closest('.col').style.display = '');
+        });
+    }
+});
+</script>
+{% endblock %} 

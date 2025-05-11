@@ -36,6 +36,32 @@
     </div>
   </div>
 
+  <!-- Project Filter Buttons -->
+  <div class="mb-4 mt-4">
+    <div class="btn-group" role="group" aria-label="Project Status Filter">
+      <button type="button" class="btn btn-outline-secondary active filter-btn" data-status="all">All</button>
+      <button type="button" class="btn btn-outline-secondary filter-btn" data-status="Planning">Planning</button>
+      <button type="button" class="btn btn-outline-secondary filter-btn" data-status="Ongoing">Ongoing</button>
+      <button type="button" class="btn btn-outline-secondary filter-btn" data-status="Completed">Completed</button>
+      <button type="button" class="btn btn-outline-secondary filter-btn" data-status="On Hold">On Hold</button>
+    </div>
+  </div>
+
+  <!-- New Card for Donor Insights Link -->
+  <div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title"><i class="fas fa-donate me-2"></i>View Donor Insights</h5>
+                <p class="card-text text-muted">Analyze donor contributions and overall fundraising efforts.</p>
+                <a href="{{ url_for('donor_insights') }}" class="btn btn-info">
+                    <i class="fas fa-chart-bar me-2"></i>Go to Donor Insights
+                </a>
+            </div>
+        </div>
+    </div>
+  </div>
+
   {% if projects %}
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
       {% for project in projects %}
@@ -44,7 +70,7 @@
           <div class="card-header bg-primary text-white">
             <h5 class="card-title mb-0 d-flex justify-content-between align-items-center">
               {{ project.name }}
-              <span class="badge 
+              <span class="badge project-status-badge
                 {% if project.status == 'Ongoing' %}bg-success
                 {% elif project.status == 'Planning' %}bg-info
                 {% elif project.status == 'Completed' %}bg-secondary
@@ -166,5 +192,54 @@ if (typeof Plotly !== 'undefined') {
         Plotly.newPlot('portfolioFinancialsBarChart', barData, barLayout, config);
     }
 }
+
+// Client-side project filtering
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const projectCards = document.querySelectorAll('.project-card-wrapper'); // Wrapper for each project card column
+
+    if (filterButtons.length > 0 && projectCards.length > 0) {
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Manage active button state
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+
+                const filterStatus = this.getAttribute('data-status');
+
+                projectCards.forEach(cardWrapper => {
+                    const projectStatusBadge = cardWrapper.querySelector('.project-status-badge');
+                    if (projectStatusBadge) {
+                        const projectStatus = projectStatusBadge.textContent.trim();
+                        if (filterStatus === 'all' || projectStatus === filterStatus) {
+                            cardWrapper.style.display = ''; // Show card
+                        } else {
+                            cardWrapper.style.display = 'none'; // Hide card
+                        }
+                    } else {
+                        // If a card somehow doesn't have a status badge, show it by default with 'all'
+                        if (filterStatus === 'all') {
+                             cardWrapper.style.display = '';
+                        } else {
+                             cardWrapper.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        });
+    }
+    // Add a class to project card column for easier selection
+    document.querySelectorAll('.row.row-cols-1.row-cols-md-2.row-cols-lg-3.g-4 > .col').forEach(col => {
+        col.classList.add('project-card-wrapper');
+    });
+    // Store project status in a data attribute on the wrapper for more robust filtering if needed later
+    // This also requires adding a specific class to the status badge in the project card HTML
+    projectCards.forEach(cardWrapper => {
+        const statusBadge = cardWrapper.querySelector('.project-status-badge'); // Ensure your status badge has this class
+        if (statusBadge) {
+            cardWrapper.setAttribute('data-project-status', statusBadge.textContent.trim());
+        }
+    });
+});
 </script>
 {% endblock %}
