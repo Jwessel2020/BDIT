@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="dashboard-container">
   <div class="d-flex justify-content-between align-items-center mb-4">
@@ -35,15 +36,15 @@
   <!-- Charts Row 2 -->
   <div class="row mb-4">
     <div class="col-lg-12">
-        <div class="card h-100">
-            <div class="card-header">Overall Donations by Project</div>
-            <div class="card-body">
-              <div id="overallDonationsByProjectPieChart" style="width:100%; height:400px;"></div>
-              {% if not overall_project_labels %}
-              <p class="text-muted text-center mt-3">No project-specific donation data to display.</p>
-              {% endif %}
-            </div>
+      <div class="card h-100">
+        <div class="card-header">Overall Donations by Project</div>
+        <div class="card-body">
+          <div id="overallDonationsByProjectPieChart" style="width:100%; height:400px;"></div>
+          {% if not overall_project_labels %}
+          <p class="text-muted text-center mt-3">No project-specific donation data to display.</p>
+          {% endif %}
         </div>
+      </div>
     </div>
   </div>
 
@@ -88,6 +89,41 @@
     </div>
   </div>
 
+    <!-- Email Report to Donors (Full Width UI) -->
+  <!-- Email Report to Donors (Truly Full Width Textarea) -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-envelope-open-text me-2"></i>Email Report to Donors</h5>
+        </div>
+        <div class="p-0">
+          <form method="POST" action="{{ url_for('send_donor_report') }}">
+            <textarea 
+              class="form-control border-0 rounded-0" 
+              id="reportContent" 
+              name="report_content" 
+              rows="18"
+              style="width: 100%; resize: vertical; font-size: 1rem; font-family: 'Segoe UI', system-ui, sans-serif; padding: 1.25rem;"
+              placeholder="Write or generate your message to donors here..." 
+              required></textarea>
+
+            <div class="d-flex justify-content-between flex-wrap gap-2 p-3 border-top">
+              <button type="button" class="btn btn-outline-secondary" onclick="generateDonorReport()">
+                <i class="fas fa-magic me-2"></i>Generate Report
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-paper-plane me-2"></i>Send Email to All Donors
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
 </div>
 {% endblock %}
 
@@ -95,81 +131,118 @@
 {{ super() }}
 <script>
 if (typeof Plotly !== 'undefined') {
-    // Overall Donation Trend Line Chart
-    const overallTimestamps = {{ overall_donation_timestamps | tojson }};
-    const overallCumulative = {{ overall_cumulative_donations | tojson }};
-    if (overallTimestamps && overallTimestamps.length > 0 && document.getElementById('overallDonationTrendChart')) {
-        var trendTrace = {
-            x: overallTimestamps,
-            y: overallCumulative,
-            mode: 'lines+markers',
-            type: 'scatter',
-            name: 'Overall Cumulative Donations',
-            line: {shape: 'spline', color: '#5cb85c'}, // Green color
-            marker: {color: '#5cb85c'}
-        };
-        var trendLayout = {
-            height: 350,
-            title: 'Overall Cumulative Donations Over Time',
-            xaxis: { title: 'Date', type: 'date' },
-            yaxis: { title: 'Total Cumulative Amount ($)', tickprefix: '$' },
-            margin: { l: 60, r: 30, b: 50, t: 50, pad: 4 },
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
-        };
-        Plotly.newPlot('overallDonationTrendChart', [trendTrace], trendLayout, {responsive: true, displaylogo: false});
-    }
+  const overallTimestamps = {{ overall_donation_timestamps | tojson }};
+  const overallCumulative = {{ overall_cumulative_donations | tojson }};
+  if (overallTimestamps && document.getElementById('overallDonationTrendChart')) {
+    Plotly.newPlot('overallDonationTrendChart', [{
+      x: overallTimestamps,
+      y: overallCumulative,
+      mode: 'lines+markers',
+      type: 'scatter',
+      name: 'Overall Cumulative Donations',
+      line: {shape: 'spline', color: '#5cb85c'},
+      marker: {color: '#5cb85c'}
+    }], {
+      height: 350,
+      title: 'Overall Cumulative Donations Over Time',
+      xaxis: { title: 'Date', type: 'date' },
+      yaxis: { title: 'Total Cumulative Amount ($)', tickprefix: '$' },
+      margin: { l: 60, r: 30, b: 50, t: 50 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+    }, {responsive: true, displaylogo: false});
+  }
 
-    // Top Donors Bar Chart
-    const topDonorLabels = {{ top_donor_labels | tojson }};
-    const topDonorValues = {{ top_donor_values | tojson }};
-    if (topDonorLabels && topDonorLabels.length > 0 && document.getElementById('topDonorsBarChart')) {
-        var topDonorsTrace = {
-            x: topDonorLabels,
-            y: topDonorValues,
-            type: 'bar',
-            name: 'Total Donated',
-            marker: {color: '#4361ee'}
-        };
-        var topDonorsLayout = {
-            height: 350,
-            title: 'Top Donors by Amount',
-            xaxis: { title: 'Donor Username' },
-            yaxis: { title: 'Total Amount Donated ($)', tickprefix: '$' },
-            margin: { l: 60, r: 30, b: 80, t: 50, pad: 4 }, // Increased bottom margin for labels
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
-        };
-        Plotly.newPlot('topDonorsBarChart', [topDonorsTrace], topDonorsLayout, {responsive: true, displaylogo: false});
-    }
+  const topDonorLabels = {{ top_donor_labels | tojson }};
+  const topDonorValues = {{ top_donor_values | tojson }};
+  if (topDonorLabels && document.getElementById('topDonorsBarChart')) {
+    Plotly.newPlot('topDonorsBarChart', [{
+      x: topDonorLabels,
+      y: topDonorValues,
+      type: 'bar',
+      name: 'Total Donated',
+      marker: {color: '#4361ee'}
+    }], {
+      height: 350,
+      title: 'Top Donors by Amount',
+      xaxis: { title: 'Donor Username' },
+      yaxis: { title: 'Total Amount Donated ($)', tickprefix: '$' },
+      margin: { l: 60, r: 30, b: 80, t: 50 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+    }, {responsive: true, displaylogo: false});
+  }
 
-    // Overall Donations by Project Pie Chart
-    const overallProjectLabels = {{ overall_project_labels | tojson }};
-    const overallProjectValues = {{ overall_project_values | tojson }};
-    if (overallProjectLabels && overallProjectLabels.length > 0 && document.getElementById('overallDonationsByProjectPieChart')) {
-        var projectPieData = [{
-            values: overallProjectValues,
-            labels: overallProjectLabels,
-            type: 'pie',
-            hole: .4,
-            textinfo: "label+percent",
-            textposition: 'inside',
-            automargin: true
-        }];
-        var projectPieLayout = {
-            height: 400,
-            title: 'Overall Donation Distribution by Project',
-            margin: {"t": 50, "b": 20, "l": 20, "r": 20},
-            showlegend: true,
-            legend: {orientation: "h", yanchor: "bottom", y: -0.2, xanchor: "center", x: 0.5}, // Adjusted legend
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
-        };
-        Plotly.newPlot('overallDonationsByProjectPieChart', projectPieData, projectPieLayout, {responsive: true, displaylogo: false});
-    }
+  const overallProjectLabels = {{ overall_project_labels | tojson }};
+  const overallProjectValues = {{ overall_project_values | tojson }};
+  if (overallProjectLabels && document.getElementById('overallDonationsByProjectPieChart')) {
+    Plotly.newPlot('overallDonationsByProjectPieChart', [{
+      values: overallProjectValues,
+      labels: overallProjectLabels,
+      type: 'pie',
+      hole: .4,
+      textinfo: "label+percent",
+      textposition: 'inside',
+      automargin: true
+    }], {
+      height: 400,
+      title: 'Overall Donation Distribution by Project',
+      margin: { t: 50, b: 20, l: 20, r: 20 },
+      showlegend: true,
+      legend: { orientation: "h", yanchor: "bottom", y: -0.2, xanchor: "center", x: 0.5 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+    }, {responsive: true, displaylogo: false});
+  }
+}
+
+// Generate AI report content
+function generateDonorReport() {
+  const reportTemplate = `Dear Valued Donor,
+
+We are pleased to share a detailed update on our operations this week — made possible thanks to your generosity.
+
+📍 Mission Coverage:
+- 5 out of 7 remote villages were successfully reached with essential supplies.
+- 1,230 children received support including nutrition packs, medical kits, and hygiene essentials.
+- 92% of planned delivery routes were completed despite regional flooding.
+
+🚑 Health & Emergency Response:
+- A flu outbreak was reported in Cluster 3, impacting 24 children.
+- Mobile clinics deployed to the zone completed 127 screenings and provided over 300 treatments.
+- Crisis Response Unit Alpha continues to assist in the Southern Cape region.
+
+📦 Field Logistics:
+- 37 supply routes activated, spanning 4 provinces.
+- 22 field agents deployed this week.
+- Average delivery delay dropped to 18 hours (previously 26), thanks to temporary road access built by local volunteers.
+
+💰 Donation Impact:
+Your donations this week totaled **$42,750** — an 8.4% increase from the previous cycle. Here's where your support went:
+
+- 34% → Medical supplies (flu kits, sanitation packs)
+- 26% → Child nutrition programs
+- 19% → Logistics and fuel for remote delivery
+- 14% → Crisis response staffing and transport
+- 7% → Education and child protection workshops
+
+🧾 Donor Engagement:
+- 47 new donors joined our network.
+- 64% of donations were marked for critical, time-sensitive aid.
+- Donor feedback has been overwhelmingly positive — thank you for believing in our mission.
+
+🙏 Final Words:
+Your impact is real. Because of you, aid reaches children faster, health teams act sooner, and families feel hope again. 
+
+Thank you for being a vital part of our response effort.
+
+Warm regards,  
+The NGO Operations Team`;
+
+  document.getElementById("reportContent").value = reportTemplate;
 }
 </script>
-{% endblock %} 
+{% endblock %}

@@ -318,12 +318,12 @@ def manager_dashboard():
     portfolio_financial_values = [float(total_budget_all_projects), float(total_donations_all_projects)]
 
     return render_template('manager_dashboard.html', 
-                           projects=managed_projects,
-                           status_labels=chart_status_labels,
-                           status_values=chart_status_values,
-                           portfolio_financial_labels=portfolio_financial_labels,
-                           portfolio_financial_values=portfolio_financial_values
-                           )
+                       projects=managed_projects,
+                       status_labels=chart_status_labels,
+                       status_values=chart_status_values,
+                       portfolio_financial_labels=portfolio_financial_labels,
+                       portfolio_financial_values=portfolio_financial_values,
+                       datetime=datetime)  
 
 # New route for displaying a single project's details
 @app.route('/project/<int:project_id>')
@@ -667,6 +667,22 @@ init_messaging(app, socketio) # Initialize messaging blueprint and socket events
 # Pass app.app_context() to the MessageScheduler
 message_scheduler = MessageScheduler(socketio, app.app_context)
 message_scheduler.start()
+
+@app.route('/send_donor_report', methods=['POST'])
+@login_required
+@role_required('mission_manager')
+def send_donor_report():
+    report_content = request.form.get('report_content')
+    if not report_content:
+        flash('Report content cannot be empty.', 'danger')
+        return redirect(url_for('donor_insights'))
+
+    # Example: logic to send email (to be implemented)
+    app.logger.info(f"[EMAIL REPORT] Mission manager {current_user.username} sent report to donors:\n{report_content}")
+    
+    # Simulate success
+    flash('Report sent to all donors successfully!', 'success')
+    return redirect(url_for('donor_insights'))
 
 @app.teardown_appcontext
 def shutdown_scheduler(exception=None):
