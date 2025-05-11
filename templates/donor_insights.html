@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-users-cog me-2"></i>Donor Insights Dashboard</h2>
+    <div class="text-muted"><i class="fas fa-user-circle me-2"></i>{{ current_user.username }}</div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="row mb-4">
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header">Overall Donation Trend</div>
+        <div class="card-body">
+          <div id="overallDonationTrendChart" style="width:100%; height:350px;"></div>
+          {% if not overall_donation_timestamps %}
+          <p class="text-muted text-center mt-3">No overall donation data to display trend.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">Top Donors (by Amount)</div>
+        <div class="card-body">
+          <div id="topDonorsBarChart" style="width:100%; height:350px;"></div>
+          {% if not top_donor_labels %}
+          <p class="text-muted text-center mt-3">No top donor data to display.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2 -->
+  <div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card h-100">
+            <div class="card-header">Overall Donations by Project</div>
+            <div class="card-body">
+              <div id="overallDonationsByProjectPieChart" style="width:100%; height:400px;"></div>
+              {% if not overall_project_labels %}
+              <p class="text-muted text-center mt-3">No project-specific donation data to display.</p>
+              {% endif %}
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Donor Table -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-list-alt me-2"></i>Donor List
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Total Donated ($)</th>
+                  <th># of Donations</th>
+                  <th>Last Donation Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if donors %}
+                  {% for donor_info in donors %}
+                  <tr>
+                    <td>{{ donor_info.username }}</td>
+                    <td>{{ "{:,.2f}".format(donor_info.total_donated) }}</td>
+                    <td>{{ donor_info.num_donations }}</td>
+                    <td>{{ donor_info.last_donation_date }}</td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-4">No donor data available.</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+if (typeof Plotly !== 'undefined') {
+    // Overall Donation Trend Line Chart
+    const overallTimestamps = {{ overall_donation_timestamps | tojson }};
+    const overallCumulative = {{ overall_cumulative_donations | tojson }};
+    if (overallTimestamps && overallTimestamps.length > 0 && document.getElementById('overallDonationTrendChart')) {
+        var trendTrace = {
+            x: overallTimestamps,
+            y: overallCumulative,
+            mode: 'lines+markers',
+            type: 'scatter',
+            name: 'Overall Cumulative Donations',
+            line: {shape: 'spline', color: '#5cb85c'}, // Green color
+            marker: {color: '#5cb85c'}
+        };
+        var trendLayout = {
+            height: 350,
+            title: 'Overall Cumulative Donations Over Time',
+            xaxis: { title: 'Date', type: 'date' },
+            yaxis: { title: 'Total Cumulative Amount ($)', tickprefix: '$' },
+            margin: { l: 60, r: 30, b: 50, t: 50, pad: 4 },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        Plotly.newPlot('overallDonationTrendChart', [trendTrace], trendLayout, {responsive: true, displaylogo: false});
+    }
+
+    // Top Donors Bar Chart
+    const topDonorLabels = {{ top_donor_labels | tojson }};
+    const topDonorValues = {{ top_donor_values | tojson }};
+    if (topDonorLabels && topDonorLabels.length > 0 && document.getElementById('topDonorsBarChart')) {
+        var topDonorsTrace = {
+            x: topDonorLabels,
+            y: topDonorValues,
+            type: 'bar',
+            name: 'Total Donated',
+            marker: {color: '#4361ee'}
+        };
+        var topDonorsLayout = {
+            height: 350,
+            title: 'Top Donors by Amount',
+            xaxis: { title: 'Donor Username' },
+            yaxis: { title: 'Total Amount Donated ($)', tickprefix: '$' },
+            margin: { l: 60, r: 30, b: 80, t: 50, pad: 4 }, // Increased bottom margin for labels
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        Plotly.newPlot('topDonorsBarChart', [topDonorsTrace], topDonorsLayout, {responsive: true, displaylogo: false});
+    }
+
+    // Overall Donations by Project Pie Chart
+    const overallProjectLabels = {{ overall_project_labels | tojson }};
+    const overallProjectValues = {{ overall_project_values | tojson }};
+    if (overallProjectLabels && overallProjectLabels.length > 0 && document.getElementById('overallDonationsByProjectPieChart')) {
+        var projectPieData = [{
+            values: overallProjectValues,
+            labels: overallProjectLabels,
+            type: 'pie',
+            hole: .4,
+            textinfo: "label+percent",
+            textposition: 'inside',
+            automargin: true
+        }];
+        var projectPieLayout = {
+            height: 400,
+            title: 'Overall Donation Distribution by Project',
+            margin: {"t": 50, "b": 20, "l": 20, "r": 20},
+            showlegend: true,
+            legend: {orientation: "h", yanchor: "bottom", y: -0.2, xanchor: "center", x: 0.5}, // Adjusted legend
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        Plotly.newPlot('overallDonationsByProjectPieChart', projectPieData, projectPieLayout, {responsive: true, displaylogo: false});
+    }
+}
+</script>
+{% endblock %} 

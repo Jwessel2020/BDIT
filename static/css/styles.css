@@ -2,51 +2,164 @@
 
 /* Modern UI Styles */
 :root {
-  --primary-color: #2c3e50;
-  --secondary-color: #3498db;
-  --accent-color: #e74c3c;
-  --background-color: #f9fafb;
-  --text-color: #2c3e50;
-  --border-radius: 8px;
-  --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  --transition: all 0.3s ease;
+  /* Color Palette - Professional & Modern */
+  --primary-brand: #005A9C; /* Deeper, professional blue */
+  --primary-brand-light: #E6F0F7; /* Lighter shade for backgrounds/accents */
+  --primary-brand-dark: #003D6B; /* Darker shade for hover/active states */
+  
+  --secondary-accent: #4CAF50; /* Vibrant green for success/positive actions */
+  --secondary-accent-light: #E8F5E9;
+  --secondary-accent-dark: #388E3C;
+
+  --warning-accent: #FFC107; /* Amber for warnings */
+  --danger-accent: #D32F2F;  /* Deeper red for errors/danger */
+  --danger-accent-rgb: 211, 47, 47; /* RGB for use in rgba() */
+
+  --neutral-text-primary: #212529; /* Bootstrap's default dark text, good for readability */
+  --neutral-text-secondary: #6c757d; /* Lighter grey for secondary text */
+  --neutral-text-disabled: #adb5bd;
+
+  --neutral-bg-light: #f8f9fa; /* Light grey for backgrounds - current is #f9fafb, very similar */
+  --neutral-bg-medium: #e9ecef;
+  --neutral-bg-dark: #dee2e6;
+  
+  --neutral-border: #ced4da; /* Standard border color */
+
+  /* Re-mapping old variables to new ones, or updating them */
+  --primary-color: var(--primary-brand);
+  --secondary-color: var(--secondary-accent); /* Using green as a more distinct secondary/success */
+  --accent-color: var(--danger-accent); /* Danger red as a general accent */
+  --background-color: var(--neutral-bg-light);
+  --text-color: var(--neutral-text-primary);
+  
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px; /* Current var(--border-radius) */
+  --border-radius-lg: 12px;
+  
+  --box-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --box-shadow-md: 0 4px 6px rgba(0,0,0,0.1); /* More defined shadow */
+  --box-shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+
+  --transition-fast: all 0.2s ease-in-out;
+  --transition-std: all 0.3s ease; /* Current var(--transition) */
 }
 
 body {
   background-color: var(--background-color);
   color: var(--text-color);
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif; /* Added Inter as a preferred modern font */
+  font-size: 1rem; /* Typically 16px */
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Lexend Deca', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif; /* A slightly more display-oriented font for headings */
+  color: var(--primary-brand-dark);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+h1 { font-size: 2.5rem; letter-spacing: -0.5px; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
 
 /* Navbar Styles */
 .navbar {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
-  box-shadow: var(--box-shadow);
-  padding: 1rem 0;
-}
-
-.navbar-dark .navbar-nav .nav-link {
-  color: rgba(255, 255, 255, 0.9) !important;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius);
-  transition: var(--transition);
-}
-
-.navbar-dark .navbar-nav .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
+  background: linear-gradient(135deg, var(--primary-brand-dark), var(--primary-brand)) !important;
+  box-shadow: var(--box-shadow-md);
+  padding: 0.5rem 1.5rem; /* Adjusted padding for overall navbar height */
+  min-height: 70px; /* Ensure navbar has a good height */
 }
 
 .navbar-brand {
-  font-size: 1.5rem;
+  font-family: 'Lexend Deca', 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.75rem; /* Slightly larger brand */
   font-weight: 700;
-  letter-spacing: 0.5px;
   color: white !important;
+  display: flex;
+  align-items: center;
+}
+.navbar-brand i {
+    font-size: 2rem; /* Larger brand icon */
+    margin-right: 0.75rem;
 }
 
-.navbar-nav {
-  list-style-type: none !important;
+.navbar-nav .nav-item {
+    margin-left: 0.25rem; /* Small gap between nav items */
+    margin-right: 0.25rem;
+}
+
+.navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.9) !important; /* Brighter text for better contrast on button bg */
+  font-family: 'Lexend Deca', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem; 
+  padding: 0.8rem 1.1rem; /* Increased padding for larger button feel */
+  border-radius: var(--border-radius-sm); /* Slightly less rounded for a blockier button */
+  transition: var(--transition-fast);
+  display: flex; 
+  align-items: center;
+  line-height: 1.3;
+  background-color: rgba(255, 255, 255, 0.05); /* Subtle background for default state */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0 0.2rem; /* Small gap between buttons */
+  box-shadow: var(--box-shadow-sm);
+}
+
+.navbar-nav .nav-link i {
+    margin-right: 0.7rem; 
+    font-size: 1.05em; 
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.2) !important; /* Brighter background for active/hover */
+  color: white !important;
+  border-color: rgba(255,255,255,0.3);
+  box-shadow: var(--box-shadow-md);
+  transform: translateY(-1px); /* Slight lift on hover */
+}
+
+.nav-link-logout {
+    /* Specific styling for logout to make it stand out if needed, or inherit above */
+}
+.nav-link-logout:hover {
+    background-color: rgba(var(--danger-accent-rgb, 211, 47, 47), 0.8) !important; 
+    border-color: rgba(var(--danger-accent-rgb, 211, 47, 47), 0.9) !important;
+    color: white !important;
+}
+
+/* User Info in Navbar - ensure it aligns and doesn't break button flow */
+.nav-user-info {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1rem; /* Match nav-link padding for alignment */
+    color: rgba(255,255,255,0.8);
+    font-size: 0.9rem;
+    margin-left: 0.5rem; /* Space from other nav items */
+    background-color: rgba(0,0,0,0.1); /* Slightly different background */
+    border-radius: var(--border-radius-sm);
+}
+.nav-user-icon {
+    font-size: 1.5rem; /* Larger user icon */
+    margin-right: 0.5rem;
+    color: rgba(255,255,255,0.8);
+}
+.nav-username {
+    font-weight: 600;
+    color: white;
+}
+.nav-user-role {
+    font-size: 0.8rem;
+    margin-left: 0.3rem;
+    color: rgba(255,255,255,0.7);
 }
 
 /* Enhanced Block Link Styling */
@@ -102,73 +215,209 @@ body {
 
 /* Card Styles */
 .card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: var(--transition);
-  margin-bottom: 1.5rem;
+  border: 1px solid var(--neutral-bg-dark);
+  border-radius: var(--border-radius-lg); /* Softer, larger radius */
+  box-shadow: var(--box-shadow-sm);
+  transition: var(--transition-std);
+  margin-bottom: 1.75rem;
   background-color: white;
 }
 
 .card:hover {
-  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
-  transform: translateY(-2px);
+  box-shadow: var(--box-shadow-md);
+  transform: translateY(-3px);
 }
 
 .card-header {
-  background-color: white;
-  border-bottom: 1px solid #f2f2f2;
+  background-color: var(--neutral-bg-light); /* Slightly off-white header */
+  border-bottom: 1px solid var(--neutral-bg-dark);
+  font-family: 'Lexend Deca', 'Segoe UI', system-ui, sans-serif;
   font-weight: 600;
-  padding: 1.25rem;
+  padding: 1rem 1.5rem;
+  color: var(--primary-brand-dark);
 }
 
 .card-body {
   padding: 1.5rem;
 }
 
+.card-footer {
+    background-color: var(--neutral-bg-light);
+    border-top: 1px solid var(--neutral-bg-dark);
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    color: var(--neutral-text-secondary);
+}
+
 /* Button Styles */
 .btn {
-  border-radius: var(--border-radius);
-  padding: 0.5rem 1.25rem;
-  font-weight: 500;
-  transition: var(--transition);
+  border-radius: var(--border-radius-md);
+  padding: 0.6rem 1.25rem; /* Adjusted padding for better feel */
+  font-weight: 600; /* Slightly bolder buttons */
+  transition: var(--transition-fast);
+  letter-spacing: 0.5px;
+  text-transform: none; /* Keep as is or uppercase, depending on desired style */
 }
 
 .btn-primary {
-  background-color: #4361ee;
-  border-color: #4361ee;
+  background-color: var(--primary-brand);
+  border-color: var(--primary-brand);
+  color: white;
 }
 
 .btn-primary:hover {
-  background-color: #3a56e4;
+  background-color: var(--primary-brand-dark);
+  border-color: var(--primary-brand-dark);
+  color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(67, 97, 238, 0.2);
+  box-shadow: var(--box-shadow-sm);
 }
 
-.btn-outline-primary {
-  color: #4361ee;
-  border-color: #4361ee;
+.btn-secondary {
+    background-color: var(--neutral-text-secondary);
+    border-color: var(--neutral-text-secondary);
+    color: white;
+}
+.btn-secondary:hover {
+    background-color: #5a6268; /* Darken of secondary */
+    border-color: #545b62;
+    color: white;
 }
 
-.btn-outline-primary:hover {
-  background-color: #4361ee;
-  color: white;
+.btn-success {
+    background-color: var(--secondary-accent);
+    border-color: var(--secondary-accent);
+}
+.btn-success:hover {
+    background-color: var(--secondary-accent-dark);
+    border-color: var(--secondary-accent-dark);
 }
 
-.btn-outline-primary.active {
-  background-color: #4361ee;
-  color: white;
+.btn-danger {
+    background-color: var(--danger-accent);
+    border-color: var(--danger-accent);
 }
 
-.btn-outline-secondary {
-  color: #6c757d;
-  border-color: #dee2e6;
+.btn-warning {
+    background-color: var(--warning-accent);
+    border-color: var(--warning-accent);
+    color: #212529; /* Dark text on yellow for better contrast */
+}
+.btn-info {
+    background-color: #007bff; /* Keeping a distinct info blue for now */
+    border-color: #007bff;
 }
 
-.btn-outline-secondary:hover {
-  background-color: #f8f9fa;
-  color: #495057;
-  border-color: #dee2e6;
+/* Form Styles */
+.form-control, .form-select {
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--neutral-border);
+  padding: 0.75rem 1rem;
+  transition: var(--transition-fast);
+  font-size: 0.95rem;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-brand);
+  box-shadow: 0 0 0 0.25rem rgba(var(--primary-brand-rgb, 0, 90, 156), 0.25); /* Requires --primary-brand-rgb to be defined */
+}
+
+.form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--neutral-text-secondary);
+}
+
+/* Table Styles */
+.table {
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.table th {
+  font-family: 'Lexend Deca', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 600;
+  color: var(--primary-brand-dark);
+  background-color: var(--primary-brand-light);
+  border-bottom: 2px solid var(--primary-brand);
+  padding: 0.9rem 0.75rem;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  border-top: 1px solid var(--neutral-bg-dark);
+  padding: 0.9rem 0.75rem;
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background-color: var(--primary-brand-light);
+}
+
+/* Map Container */
+#map {
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--box-shadow-md);
+  overflow: hidden;
+}
+
+/* Chat Window */
+#chat-window {
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--box-shadow-md);
+  padding: 1rem;
+}
+
+/* Dashboard Stats */
+.stats-card, .stat-card {
+  background-color: white;
+  border: 1px solid var(--neutral-bg-dark);
+  text-align: left;
+  padding: 1.25rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow-sm);
+}
+
+.stats-card h3, .stat-card h3 {
+  font-family: 'Lexend Deca', 'Segoe UI', system-ui, sans-serif;
+  font-size: 2rem; /* Slightly reduced for balance */
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  color: var(--primary-brand);
+}
+
+.stats-card p, .stat-card p {
+  color: var(--neutral-text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Progress Bar */
+.progress {
+  height: 10px; /* Slightly thicker for better visibility */
+  background-color: var(--neutral-bg-medium);
+  border-radius: var(--border-radius-md);
+}
+
+.progress-bar {
+  border-radius: var(--border-radius-md);
+  background-color: var(--primary-brand);
+}
+
+.progress-bar.bg-success {
+  background-color: var(--secondary-accent) !important;
+}
+
+.progress-bar.bg-warning {
+  background-color: var(--warning-accent) !important;
+}
+
+.progress-bar.bg-danger {
+  background-color: var(--danger-accent) !important;
 }
 
 /* Badge Styles */
@@ -177,147 +426,31 @@ body {
   letter-spacing: 0.3px;
 }
 
-/* Form Styles */
-.form-control {
-  border-radius: var(--border-radius);
-  border: 1px solid rgba(0,0,0,0.1);
-  padding: 0.75rem 1rem;
-  transition: var(--transition);
-}
-
-.form-control:focus {
-  border-color: var(--secondary-color);
-  box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-}
-
-.form-label {
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-/* Table Styles */
-.table {
-  background-color: white;
-  border-radius: var(--border-radius);
-  overflow: hidden;
-  margin-bottom: 0;
-}
-
-.table th {
-  font-weight: 600;
-  color: #6c757d;
-  border-top: none;
-  border-bottom: 1px solid #f2f2f2;
-}
-
-.table td {
-  border-top: none;
-  border-bottom: 1px solid #f2f2f2;
-  padding: 1rem 0.75rem;
-}
-
-.table tr:last-child td {
-  border-bottom: none;
-}
-
-.table tbody tr {
-  transition: var(--transition);
-}
-
-.table tbody tr:hover {
-  background-color: rgba(67, 97, 238, 0.03);
-}
-
-/* Map Container */
-#map {
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  overflow: hidden;
-}
-
-/* Chat Window */
-#chat-window {
-  background-color: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  padding: 1rem;
-}
-
-/* Dashboard Stats */
-.stats-card, .stat-card {
-  background-color: white;
-  border: none;
-  text-align: left;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  margin-bottom: 1.5rem;
-  transition: all 0.3s ease;
-}
-
-.stats-card:hover, .stat-card:hover {
-  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
-  transform: translateY(-2px);
-}
-
-.stats-card h3, .stat-card h3 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  color: #2c3e50;
-}
-
-.stats-card p, .stat-card p {
-  color: #6c757d;
-  margin: 0;
-  font-size: 0.95rem;
-}
-
-/* Progress Bar */
-.progress {
-  height: 8px;
-  background-color: #edf2f7;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.progress-bar {
-  border-radius: 12px;
-  background-color: #4361ee;
-}
-
-.progress-bar.bg-success {
-  background-color: #10b981 !important;
-}
-
-.progress-bar.bg-warning {
-  background-color: #f59e0b !important;
-}
-
-.progress-bar.bg-danger {
-  background-color: #ef4444 !important;
-}
-
-/* Badge Styles */
 .badge.bg-success {
-  background-color: #10b981 !important;
+  background-color: var(--secondary-accent) !important;
+  color: white !important;
 }
 
 .badge.bg-warning {
-  background-color: #f59e0b !important;
+  background-color: var(--warning-accent) !important;
+  color: var(--neutral-text-primary) !important; /* Dark text on yellow */
 }
 
 .badge.bg-danger {
-  background-color: #ef4444 !important;
+  background-color: var(--danger-accent) !important;
+  color: white !important;
+}
+
+.badge.bg-info {
+    background-color: #007bff !important; /* Example info color */
+    color: white !important;
 }
 
 /* Dashboard Container */
 .dashboard-container {
-  padding: 2rem;
-  background-color: #f9fafb;
-  font-family: 'Segoe UI', sans-serif;
+  padding: 2rem 2.5rem; /* Increased padding */
+  background-color: var(--background-color); /* Should be var(--neutral-bg-light) or similar */
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 
 /* Typography */
@@ -339,56 +472,42 @@ body {
   animation: fadeIn 0.5s ease-out;
 }
 
-/* Custom Dashboard Styles */
-.dashboard-container {
-  padding: 2rem;
-  background-color: #f9fafb;
-  font-family: 'Segoe UI', sans-serif;
+/* Styles for project_detail.html */
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
 }
 
-.stat-card {
-  background-color: white;
-  border: 1px solid #e0e0e0;
-  text-align: center;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--neutral-text-secondary);
 }
 
-.stat-card h3 {
-  margin-bottom: 0.25rem;
-  font-size: 1.75rem;
-  font-weight: 600;
+.goal-progress-bar {
+  height: 20px;
+  font-size: 0.85rem;
 }
 
-.stat-card p {
-  color: #6c757d;
-  margin: 0;
+#projectMap {
+  height: 500px;
+  width: 100%;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--box-shadow-md);
+  margin-top: 1rem;
 }
 
-.card-header {
-  background-color: #fff;
-  border-bottom: 1px solid #eee;
-}
-
-.card {
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-}
-
-.btn-outline-primary.active {
-  background-color: #0d6efd;
+.nav-tabs .nav-link.active {
+  background-color: var(--primary-brand);
   color: white;
+  border-bottom-color: var(--primary-brand);
 }
 
-.progress {
-  height: 6px;
-  background-color: #e9ecef;
-  border-radius: 3px;
+.nav-tabs .nav-link {
+  color: var(--primary-brand);
 }
 
-.progress-bar {
-  border-radius: 3px;
+.nav-tabs .nav-link:hover:not(.active) {
+  border-color: var(--secondary-accent);
 }
 
 /* Responsive Design */
@@ -421,47 +540,328 @@ body {
 
 .project-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 15px rgba(0,0,0,0.1) !important;
+  box-shadow: var(--box-shadow-lg) !important; /* Use a larger shadow on hover */
+}
+
+.project-card .card-header {
+    /* Use brand colors for project card headers for visual emphasis */
+    background-color: var(--primary-brand-light);
+    color: var(--primary-brand-dark);
+    border-bottom: 1px solid var(--primary-brand);
 }
 
 .project-card .card-header h5 {
-  font-size: 1.1rem;
+  font-size: 1.1rem; /* Existing */
+  font-family: 'Lexend Deca', sans-serif; /* Ensure heading font */
 }
 
-/* Styles for project_detail.html */
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
+.project-card .card-body {
+    padding: 1.25rem; /* Consistent padding */
 }
 
-.stat-label {
-  font-size: 0.9rem;
-  color: #6c757d;
+.project-card .card-body .card-text.flex-grow-1 {
+    margin-bottom: 1rem; /* Ensure space below description */
+    font-size: 0.875rem; /* Slightly smaller description text */
+    line-height: 1.5;
 }
 
-.goal-progress-bar {
-  height: 20px;
-  font-size: 0.85rem;
+.project-card .card-body .goal-section {
+    margin-bottom: 1rem; /* Space below goal section */
 }
 
-#projectMap {
-  height: 500px;
-  width: 100%;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  margin-top: 1rem;
+.project-card .card-body .goal-section .progress {
+    height: 12px; /* Slightly thicker progress bar */
+    font-size: 0.7rem; /* Smaller text on progress bar */
+    margin-top: 0.3rem;
 }
 
-.nav-tabs .nav-link.active {
-  background-color: var(--primary-color);
-  color: white;
-  border-bottom-color: var(--primary-color);
+.project-card .card-body .project-meta-info {
+    margin-bottom: 1.25rem; /* Space below budget/date info */
+    padding-top: 0.5rem; /* Add some space above if elements are too close */
 }
 
-.nav-tabs .nav-link {
-  color: var(--primary-color);
+.project-card .card-body .project-meta-info .col strong {
+    font-weight: 600; /* Ensure labels are bold */
 }
 
-.nav-tabs .nav-link:hover:not(.active) {
-  border-color: var(--secondary-color);
+.project-card .card-body .btn-primary {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem; /* Adjust button padding if needed */
+}
+
+/* Ensure card footers are styled with new variables */
+.project-card .card-footer {
+    font-size: 0.8rem;
+}
+
+/* Ensure Plotly chart fonts inherit or match */
+.plotly-graph-div .xtitle, .plotly-graph-div .ytitle, .plotly-graph-div .legendtext {
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+}
+
+/* --- Chat Interface Enhancements --- */
+
+/* Main chat layout */
+.chat-sidebar .card {
+    margin-bottom: 1.5rem;
+}
+.chat-sidebar .list-group-item {
+    border-radius: var(--border-radius-md);
+    margin-bottom: 0.5rem;
+    padding: 0.8rem 1rem;
+    font-weight: 500;
+    color: var(--neutral-text-secondary);
+    transition: var(--transition-fast);
+    border-width: 1px; /* Ensure border is visible for contrast */
+}
+.chat-sidebar .list-group-item.active {
+    background-color: var(--primary-brand-light);
+    color: var(--primary-brand-dark);
+    border-color: var(--primary-brand);
+    font-weight: 600;
+}
+.chat-sidebar .list-group-item:hover:not(.active) {
+    background-color: var(--neutral-bg-medium);
+    color: var(--neutral-text-primary);
+}
+.chat-sidebar .list-group-item i {
+    margin-right: 0.75rem;
+    color: var(--neutral-text-secondary);
+}
+.chat-sidebar .list-group-item.active i {
+    color: var(--primary-brand-dark);
+}
+
+.online-users .list-group-item {
+    padding: 0.75rem 1rem;
+    border-left: 0; border-right: 0;
+    border-radius: 0;
+}
+.online-users .list-group-item:first-child { border-top: 0; }
+.online-users .list-group-item:last-child { border-bottom: 0; }
+
+.online-users .fa-user-circle {
+    font-size: 2.2rem; /* Slightly larger user icons */
+    color: var(--neutral-bg-dark);
+}
+.online-users .position-relative .bg-success {
+    border: 2px solid white; /* Make online dot stand out */
+}
+
+/* Chat Area Header */
+.chat-area .card-header {
+    background-color: white; /* Keep it clean */
+    border-bottom: 1px solid var(--neutral-bg-dark);
+    padding: 1rem 1.5rem;
+}
+.chat-area .card-header h5 {
+    font-family: 'Lexend Deca', sans-serif;
+    color: var(--primary-brand-dark);
+}
+
+/* Chat Messages Area */
+#chat-messages {
+    padding: 1.5rem;
+    background-color: var(--neutral-bg-light); /* Slightly off-white for message area */
+}
+
+.message-item {
+    display: flex;
+    margin-bottom: 1.25rem;
+    max-width: 75%; /* Messages don't span full width */
+}
+
+.message-item .avatar {
+    flex-shrink: 0;
+    margin-right: 0.75rem;
+}
+.message-item .avatar .fa-user-circle {
+    font-size: 2.2rem;
+    color: var(--neutral-text-disabled);
+}
+
+.message-content-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.message-bubble {
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--border-radius-lg);
+    background-color: white;
+    box-shadow: var(--box-shadow-sm);
+    word-wrap: break-word;
+}
+
+.message-bubble p {
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.message-meta {
+    font-size: 0.75rem;
+    color: var(--neutral-text-secondary);
+    margin-top: 0.3rem;
+}
+.message-meta .sender-name {
+    font-weight: 600;
+    color: var(--neutral-text-primary);
+    margin-right: 0.5rem;
+}
+
+/* Current User's Messages */
+.message-item.current-user {
+    margin-left: auto; /* Align to the right */
+    flex-direction: row-reverse; /* Avatar on the right */
+}
+.message-item.current-user .avatar {
+    margin-right: 0;
+    margin-left: 0.75rem;
+}
+.message-item.current-user .message-content-wrapper {
+    align-items: flex-end;
+}
+.message-item.current-user .message-bubble {
+    background-color: var(--primary-brand-light); /* Primary light for own messages */
+    color: var(--primary-brand-dark);
+}
+.message-item.current-user .message-meta {
+    text-align: right;
+}
+
+/* Message Actions (Like, Reply) */
+.message-actions {
+    margin-top: 0.5rem;
+    margin-left: calc(2.2rem + 0.75rem); /* Align with message content, considering avatar */
+}
+.message-item.current-user .message-actions {
+    margin-left: 0;
+    margin-right: calc(2.2rem + 0.75rem);
+    justify-content: flex-end;
+    display: flex;
+}
+.message-actions .btn.text-muted {
+    font-size: 0.8rem;
+    color: var(--neutral-text-secondary) !important;
+    padding: 0.25rem 0.5rem;
+}
+.message-actions .btn.text-muted:hover {
+    color: var(--primary-brand) !important;
+    background-color: var(--primary-brand-light) !important;
+}
+
+/* System Messages (e.g., user joined) */
+.system-message {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: var(--neutral-text-secondary);
+}
+.system-message .badge {
+    background-color: var(--neutral-bg-medium);
+    color: var(--neutral-text-secondary);
+    font-weight: 500;
+}
+
+/* File Attachment in Message */
+.message-file-attachment .card {
+    box-shadow: none;
+    border: 1px solid var(--neutral-bg-dark);
+}
+.message-file-attachment .fa-file-pdf { color: var(--danger-accent); }
+.message-file-attachment .fa-file-word { color: var(--primary-brand); }
+.message-file-attachment .fa-file-image { color: var(--secondary-accent); }
+/* Add more for other file types */
+
+/* Chat Input Area */
+.chat-input-area .card-footer {
+    padding: 1rem 1.5rem;
+    background-color: white;
+    border-top: 1px solid var(--neutral-bg-dark);
+}
+.chat-input-area .input-group .form-control {
+    border-right: 0; /* Remove right border if buttons are appended */
+}
+.chat-input-area .input-group .form-control:focus {
+    border-right: 0;
+    box-shadow: none; /* Avoid double shadow with input group */
+}
+/* Ensure buttons in input group look good */
+.chat-input-area .input-group .btn {
+    border-color: var(--neutral-border);
+}
+.chat-input-area .input-group .btn i {
+    font-size: 1.1rem; /* Slightly larger icons for input buttons */
+}
+.chat-input-area .btn-primary {
+    /* Ensure send button uses primary brand color */
+    background-color: var(--primary-brand);
+    border-color: var(--primary-brand);
+}
+.chat-input-area .btn-primary:hover {
+    background-color: var(--primary-brand-dark);
+    border-color: var(--primary-brand-dark);
+}
+
+/* Typing Indicator (already has inline styles, but can be enhanced if needed) */
+
+/* Adjust some specific Bootstrap overrides if needed */
+.list-group-item-action:focus, .list-group-item-action:hover {
+    z-index: 1; /* Ensure hover/focus on list items is clean */
+}
+
+/* Apply new card header style to chat cards */
+.chat-sidebar .card-header, .chat-area .card-header {
+    font-family: 'Lexend Deca', 'Segoe UI', system-ui, sans-serif;
+    font-weight: 600;
+    color: var(--primary-brand-dark);
+    background-color: var(--neutral-bg-light);
+    border-bottom: 1px solid var(--neutral-bg-dark);
+}
+
+/* Filter Buttons Styling (e.g., on Manager Dashboard) */
+.btn-group[aria-label="Project Status Filter"] .filter-btn,
+.btn-group[aria-label="Urgency Filter"] .child-filter-btn {
+    font-family: 'Lexend Deca', sans-serif;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-color: var(--neutral-border);
+    color: var(--neutral-text-secondary);
+    background-color: white;
+    transition: var(--transition-fast);
+}
+
+.btn-group[aria-label="Project Status Filter"] .filter-btn:hover,
+.btn-group[aria-label="Urgency Filter"] .child-filter-btn:hover {
+    background-color: var(--primary-brand-light);
+    color: var(--primary-brand-dark);
+    border-color: var(--primary-brand-light);
+}
+
+.btn-group[aria-label="Project Status Filter"] .filter-btn.active,
+.btn-group[aria-label="Urgency Filter"] .child-filter-btn.active {
+    background-color: var(--primary-brand);
+    color: white;
+    border-color: var(--primary-brand);
+    box-shadow: var(--box-shadow-sm);
+    z-index: 2; /* Ensure active button is on top */
+}
+
+/* Styling for the View Donor Insights Card & other similar action cards */
+.action-card .card-title i {
+    color: var(--primary-brand);
+}
+
+.action-card .btn-primary, /* If we change the button to btn-primary */
+.action-card .btn-info { /* Or if we keep btn-info and style it like primary */
+    background-color: var(--primary-brand);
+    border-color: var(--primary-brand);
+    color: white;
+}
+.action-card .btn-primary:hover,
+.action-card .btn-info:hover {
+    background-color: var(--primary-brand-dark);
+    border-color: var(--primary-brand-dark);
 }

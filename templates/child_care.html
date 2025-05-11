@@ -19,20 +19,34 @@
     <div class="col-md-3">
       <div class="stats-card">
         <h3>{{ child_profiles|selectattr('priority', 'equalto', 'High')|list|length }}</h3>
-        <p>High Priority Cases</p>
+        <p>High Priority (Tag)</p>
       </div>
     </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+          <h3>{{ child_profiles|selectattr('urgency_score', '>=', 8)|list|length }}</h3>
+          <p>High Urgency (Score 8+)</p>
+        </div>
+      </div>
     <div class="col-md-3">
       <div class="stats-card">
         <h3>{{ child_profiles|selectattr('health_status', 'equalto', 'Critical')|list|length }}</h3>
         <p>Critical Health Status</p>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="stats-card">
-        <h3>{{ child_profiles|selectattr('age', 'lt', 5)|list|length }}</h3>
-        <p>Under 5 Years</p>
-      </div>
+  </div>
+
+  <!-- Filter Buttons -->
+  <div class="row mb-3">
+    <div class="col-12">
+        <strong>Filter by Urgency:</strong>
+        <div class="btn-group btn-group-sm me-3" role="group" aria-label="Urgency Filter">
+            <button type="button" class="btn btn-outline-secondary active child-filter-btn" data-filter-type="urgency" data-filter-value="all">All</button>
+            <button type="button" class="btn btn-outline-danger child-filter-btn" data-filter-type="urgency" data-filter-value="high">High (8-10)</button>
+            <button type="button" class="btn btn-outline-warning child-filter-btn" data-filter-type="urgency" data-filter-value="medium">Med (4-7)</button>
+            <button type="button" class="btn btn-outline-success child-filter-btn" data-filter-type="urgency" data-filter-value="low">Low (1-3)</button>
+        </div>
+        <!-- Add Crisis Filter Later if needed, would require passing crisis list to template -->
     </div>
   </div>
 
@@ -48,20 +62,23 @@
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 child-profile-table">
           <thead>
             <tr>
               <th>Name</th>
               <th>Age</th>
               <th>Health Status</th>
-              <th>Priority</th>
+              <th>Priority Tag</th>
+              <th>Urgency Score</th>
+              <th>Last Welfare Check</th>
+              <th>Assigned Crisis</th>
               <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for child in child_profiles %}
-            <tr>
+            <tr data-urgency="{{ child.urgency_score|default('N/A') }}" data-crisis="{{ child.assigned_crisis.name if child.assigned_crisis else 'None' }}">
               <td>
                 <div class="d-flex align-items-center">
                   <i class="fas fa-user-circle me-2 text-primary"></i>
@@ -72,33 +89,30 @@
               <td>
                 <span class="badge {% if child.health_status == 'Critical' %}bg-danger
                                   {% elif child.health_status == 'Stable' %}bg-success
-                                  {% else %}bg-warning{% endif %}">
+                                  {% else %}bg-warning{% endif %} text-dark">
                   {{ child.health_status }}
                 </span>
               </td>
               <td>
                 <span class="badge {% if child.priority == 'High' %}bg-danger
                                   {% elif child.priority == 'Medium' %}bg-warning
-                                  {% else %}bg-success{% endif %}">
+                                  {% else %}bg-success{% endif %} text-dark">
                   {{ child.priority }}
                 </span>
               </td>
+              <td><span class="badge bg-info text-dark">{{ child.urgency_score|default('N/A') }}</span></td>
+              <td>{{ child.last_welfare_check_date.strftime('%Y-%m-%d') if child.last_welfare_check_date else 'N/A' }}</td>
+              <td>{{ child.assigned_crisis.name if child.assigned_crisis else 'None' }}</td>
               <td>
-                <div class="text-truncate" style="max-width: 200px;">
+                <div class="text-truncate" style="max-width: 150px;" title="{{ child.notes }}">
                   {{ child.notes }}
                 </div>
               </td>
               <td>
                 <div class="btn-group">
-                  <button class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-info">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger">
-                    <i class="fas fa-trash"></i>
-                  </button>
+                  <button class="btn btn-sm btn-outline-primary" title="Edit"><i class="fas fa-edit"></i></button>
+                  <button class="btn btn-sm btn-outline-info" title="View Details"><i class="fas fa-eye"></i></button>
+                  <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
               </td>
             </tr>
@@ -109,52 +123,124 @@
     </div>
   </div>
 
-  <!-- Additional Information -->
+  <!-- Additional Information & Charts -->
   <div class="row mt-4">
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header">
-          <i class="fas fa-chart-bar me-2"></i>Health Status Distribution
-        </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="fas fa-birthday-cake me-2"></i>Age Distribution</div>
         <div class="card-body">
-          <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
-            <p class="text-muted">Health status distribution chart will be displayed here</p>
-          </div>
+          <div id="ageDistributionChart" style="width:100%; height:300px;"></div>
+          {% if not age_distribution_labels %}<p class="text-muted text-center mt-3">No age data.</p>{% endif %}
         </div>
       </div>
     </div>
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header">
-          <i class="fas fa-bell me-2"></i>Recent Updates
-        </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="fas fa-heartbeat me-2"></i>Health Status Overview</div>
         <div class="card-body">
-          <div class="list-group list-group-flush">
-            <div class="list-group-item">
-              <div class="d-flex w-100 justify-content-between">
-                <h6 class="mb-1">Health Check Completed</h6>
-                <small class="text-muted">3 hours ago</small>
-              </div>
-              <p class="mb-1">Regular health check completed for 5 children</p>
-            </div>
-            <div class="list-group-item">
-              <div class="d-flex w-100 justify-content-between">
-                <h6 class="mb-1">New Child Registration</h6>
-                <small class="text-muted">5 hours ago</small>
-              </div>
-              <p class="mb-1">New child profile added to the system</p>
-            </div>
-            <div class="list-group-item">
-              <div class="d-flex w-100 justify-content-between">
-                <h6 class="mb-1">Priority Update</h6>
-                <small class="text-muted">1 day ago</small>
-              </div>
-              <p class="mb-1">Priority level updated for 2 children</p>
-            </div>
-          </div>
+          <div id="healthStatusPieChart" style="width:100%; height:300px;"></div>
+          {% if not health_status_labels %}<p class="text-muted text-center mt-3">No health status data.</p>{% endif %}
         </div>
       </div>
     </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+          <div class="card-header"><i class="fas fa-tachometer-alt me-2"></i>Urgency Score Distribution</div>
+          <div class="card-body">
+            <div id="urgencyScoreChart" style="width:100%; height:300px;"></div>
+            {% if not urgency_labels %}<p class="text-muted text-center mt-3">No urgency score data.</p>{% endif %}
+          </div>
+        </div>
+      </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+if (typeof Plotly !== 'undefined') {
+    // Age Distribution Bar Chart
+    const ageLabels = {{ age_distribution_labels | tojson }};
+    const ageValues = {{ age_distribution_values | tojson }};
+    if (ageLabels && ageLabels.length > 0 && document.getElementById('ageDistributionChart')) {
+        var ageData = [{ x: ageLabels, y: ageValues, type: 'bar', marker: { color: '#3498db' } }];
+        var ageLayout = {
+            height: 300, title: 'Child Age Distribution', xaxis: { title: 'Age Group' },
+            yaxis: { title: 'Number of Children' }, margin: { t: 40, b: 70, l: 50, r: 20 },
+            paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        Plotly.newPlot('ageDistributionChart', ageData, ageLayout, {responsive: true, displaylogo: false});
+    }
+
+    // Health Status Pie Chart
+    const healthLabels = {{ health_status_labels | tojson }};
+    const healthValues = {{ health_status_values | tojson }};
+    if (healthLabels && healthLabels.length > 0 && document.getElementById('healthStatusPieChart')) {
+        var healthData = [{
+            values: healthValues, labels: healthLabels, type: 'pie', hole: .4,
+            textinfo: "label+percent", textposition: 'inside', automargin: true
+        }];
+        var healthLayout = {
+            height: 300, title: 'Health Status Overview', margin: {"t": 40, "b": 20, "l": 20, "r": 20},
+            showlegend: true, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        Plotly.newPlot('healthStatusPieChart', healthData, healthLayout, {responsive: true, displaylogo: false});
+    }
+
+    // Urgency Score Bar Chart
+    const urgencyLabels = {{ urgency_labels | tojson }};
+    const urgencyValues = {{ urgency_values | tojson }};
+    if (urgencyLabels && urgencyLabels.length > 0 && document.getElementById('urgencyScoreChart')) {
+        var urgencyData = [{ x: urgencyLabels, y: urgencyValues, type: 'bar', marker: {color: '#e74c3c'} }]; // Red for urgency
+        var urgencyLayout = {
+            height: 300, title: 'Children by Urgency Score', 
+            xaxis: { title: 'Urgency Score' }, yaxis: { title: 'Number of Children' },
+            margin: { t: 40, b: 50, l: 50, r: 20 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+        };
+        Plotly.newPlot('urgencyScoreChart', urgencyData, urgencyLayout, {responsive: true, displaylogo: false});
+    }
+}
+
+// Client-side filtering for child profiles
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('.child-filter-btn');
+    const profileRows = document.querySelectorAll('.child-profile-table tbody tr');
+
+    if (filterButtons.length > 0 && profileRows.length > 0) {
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                const filterType = this.getAttribute('data-filter-type');
+                const filterValue = this.getAttribute('data-filter-value');
+
+                profileRows.forEach(row => {
+                    let showRow = false;
+                    if (filterType === 'urgency') {
+                        const rowUrgency = parseInt(row.getAttribute('data-urgency'));
+                        if (filterValue === 'all') {
+                            showRow = true;
+                        } else if (filterValue === 'high' && rowUrgency >= 8) {
+                            showRow = true;
+                        } else if (filterValue === 'medium' && rowUrgency >= 4 && rowUrgency <= 7) {
+                            showRow = true;
+                        } else if (filterValue === 'low' && rowUrgency >= 1 && rowUrgency <= 3) {
+                            showRow = true;
+                        } else if (isNaN(rowUrgency) && filterValue === 'low'){ // consider None/Other as low for now if not explicitly filtered
+                             showRow = true;
+                        }
+                    }
+                    // Add more filter types here (e.g., crisis) if needed
+
+                    row.style.display = showRow ? '' : 'none';
+                });
+            });
+        });
+    }
+});
+</script>
 {% endblock %}

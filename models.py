@@ -21,6 +21,9 @@ class User(db.Model, UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def __repr__(self):
+        return f'<Project {self.id} - {self.name}>'
+
 # New Project Model
 class Project(db.Model):
     __tablename__ = 'project'
@@ -42,6 +45,25 @@ class Project(db.Model):
 
     def __repr__(self):
         return f'<Project {self.id} - {self.name}>'
+
+# NEW Crisis Model
+class Crisis(db.Model):
+    __tablename__ = 'crisis'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    location_lat = db.Column(db.Float, nullable=True) # Approximate center
+    location_lon = db.Column(db.Float, nullable=True)
+    start_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    status = db.Column(db.String(50), nullable=False, default='Active') # e.g., Active, Monitoring, Resolved
+
+    # Relationship to ChildProfile (one crisis can have many assigned children)
+    children_assigned = db.relationship('ChildProfile', backref='assigned_crisis', lazy='dynamic')
+    # Relationship to ResourceRoute (one crisis can have many resource routes targeted)
+    resource_routes_targeted = db.relationship('ResourceRoute', backref='target_crisis', lazy='dynamic')
+
+    def __repr__(self):
+        return f'<Crisis {self.id} - {self.name}>'
 
 class Donation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -68,8 +90,12 @@ class ResourceRoute(db.Model):
     destination_lon = db.Column(db.Float, nullable=False)
     resource_type = db.Column(db.String(50), nullable=False)  # e.g., "Medical", "Food", etc.
     supply_quantity = db.Column(db.Integer, nullable=True)    # Optional field
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True) # Added
-    project = db.relationship('Project', backref=db.backref('resource_routes', lazy='dynamic')) # Added
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
+    status = db.Column(db.String(50), nullable=True, default='Needed') # NEW from Phase 2 plan
+    assigned_agent_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # NEW from Phase 2 plan
+    target_crisis_id = db.Column(db.Integer, db.ForeignKey('crisis.id'), nullable=True) # NEW from Phase 2 plan
+    project = db.relationship('Project', backref=db.backref('resource_routes', lazy='dynamic'))
+    assigned_agent = db.relationship('User', backref=db.backref('assigned_routes', lazy='dynamic')) # NEW from Phase 2 plan
 
 class ChildLocation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -109,8 +135,12 @@ class ChildProfile(db.Model):
     # Current location data for the child - might be better in a separate ChildCurrentLocation table if it changes often
     current_lat = db.Column(db.Float, nullable=True)
     current_lon = db.Column(db.Float, nullable=True)
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True) # Added
-    project = db.relationship('Project', backref=db.backref('child_profiles', lazy='dynamic')) # Added
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
+    # NEW Fields for Child Welfare Enhancement
+    urgency_score = db.Column(db.Integer, nullable=True, default=5) # Scale 1-10, higher is more urgent
+    last_welfare_check_date = db.Column(db.DateTime, nullable=True)
+    assigned_crisis_id = db.Column(db.Integer, db.ForeignKey('crisis.id'), nullable=True)
+    project = db.relationship('Project', backref=db.backref('child_profiles', lazy='dynamic'))
 
 class Message(db.Model):
     """

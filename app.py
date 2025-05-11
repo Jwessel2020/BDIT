@@ -4,7 +4,7 @@ import logging # Import logging module
 from logging.handlers import RotatingFileHandler # For log rotation
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, abort
 import random
-from models import db, Project, Donation, User, ResourceRoute, ChildLocation, ChildProfile, Message, FieldAgentLocation
+from models import db, Project, Donation, User, ResourceRoute, ChildLocation, ChildProfile, Message, FieldAgentLocation, Crisis
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from functools import wraps
 from datetime import datetime
@@ -209,10 +209,57 @@ def donor():
 
 @app.route('/child_care')
 @login_required
-@role_required('child_care', 'mission_manager') # MODIFIED: Allow mission_manager
+@role_required('child_care', 'mission_manager')
 def child_care():
-    child_profiles = ChildProfile.query.all() # In a real app, filter by child care provider's assigned projects/children
-    return render_template('child_care.html', child_profiles=child_profiles)
+    child_profiles = ChildProfile.query.all()
+
+    # Data for Age Distribution Bar Chart
+    age_bins = {"0-2": 0, "3-5": 0, "6-10": 0, "11-14": 0, "15-18": 0, "Other": 0}
+    for child in child_profiles:
+        age = child.age
+        if 0 <= age <= 2:
+            age_bins["0-2"] += 1
+        elif 3 <= age <= 5:
+            age_bins["3-5"] += 1
+        elif 6 <= age <= 10:
+            age_bins["6-10"] += 1
+        elif 11 <= age <= 14:
+            age_bins["11-14"] += 1
+        elif 15 <= age <= 18:
+            age_bins["15-18"] += 1
+        else:
+            age_bins["Other"] += 1
+    age_distribution_labels = list(age_bins.keys())
+    age_distribution_values = list(age_bins.values())
+
+    # Data for Health Status Pie Chart
+    health_status_counts = {}
+    for child in child_profiles:
+        status = child.health_status if child.health_status else "Unknown"
+        health_status_counts[status] = health_status_counts.get(status, 0) + 1
+    
+    health_status_labels = list(health_status_counts.keys())
+    health_status_values = list(health_status_counts.values())
+
+    # Data for Urgency Score Chart
+    urgency_score_counts = {str(i): 0 for i in range(1, 11)} # Initialize for scores 1-10
+    urgency_score_counts['Other/None'] = 0
+    for child in child_profiles:
+        score = str(child.urgency_score) if child.urgency_score in range(1, 11) else 'Other/None'
+        urgency_score_counts[score] = urgency_score_counts.get(score, 0) + 1
+    
+    urgency_labels = list(urgency_score_counts.keys())
+    urgency_values = list(urgency_score_counts.values())
+
+    return render_template('child_care.html', 
+                           child_profiles=child_profiles,
+                           age_distribution_labels=age_distribution_labels,
+                           age_distribution_values=age_distribution_values,
+                           health_status_labels=health_status_labels,
+                           health_status_values=health_status_values,
+                           urgency_labels=urgency_labels,
+                           urgency_values=urgency_values
+                           )
 
 @app.route('/add_child_profile', methods=['GET', 'POST'])
 @login_required
@@ -360,6 +407,36 @@ def project_detail(project_id):
                            donation_timestamps=donation_timestamps, # NEW data for chart
                            cumulative_donations=cumulative_donations) # NEW data for chart
 
+# Endpoint to update project status
+@app.route('/project/<int:project_id>/update_status', methods=['POST'])
+@login_required
+@role_required('mission_manager')
+def update_project_status(project_id):
+    project = Project.query.get_or_404(project_id)
+    if project.manager_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    new_status = data.get('new_status')
+
+    if not new_status:
+        return jsonify({'success': False, 'message': 'New status not provided'}), 400
+
+    # Optional: Add validation for allowed statuses
+    allowed_statuses = ['Planning', 'Ongoing', 'On Hold', 'Completed']
+    if new_status not in allowed_statuses:
+        return jsonify({'success': False, 'message': f'Invalid status: {new_status}'}), 400
+
+    try:
+        project.status = new_status
+        db.session.commit()
+        app.logger.info(f"Project {project.id} status updated to {new_status} by manager {current_user.username}")
+        return jsonify({'success': True, 'new_status': new_status, 'message': 'Project status updated successfully.'})
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating project {project.id} status: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error updating status.'}), 500
+
 # Unified Map Route (Global View)
 @app.route('/map')
 @login_required # All authenticated users can see the global map
@@ -417,6 +494,137 @@ def map_view():
                            field_agent_locations=latest_agent_locations_map,
                            heat_data=all_heat_data,
                            is_global_map=True) # Flag to distinguish from project map
+
+# New Route for Crisis Response Dashboard
+@app.route('/crisis_dashboard')
+@login_required
+@role_required('mission_manager') # Or other roles as appropriate
+def crisis_dashboard():
+    crises = Crisis.query.order_by(Crisis.start_date.desc()).all()
+    # Later, we can add logic here to fetch details for a specific crisis if an ID is provided
+    return render_template('crisis_dashboard.html', crises=crises)
+
+# API Endpoint to get details for a specific crisis
+@app.route('/api/crisis/<int:crisis_id>/details')
+@login_required
+@role_required('mission_manager')
+def api_crisis_details(crisis_id):
+    crisis = Crisis.query.get_or_404(crisis_id)
+
+    children_in_crisis = []
+    for child in crisis.children_assigned.order_by(ChildProfile.urgency_score.desc().nullslast(), ChildProfile.priority.desc()):
+        children_in_crisis.append({
+            'id': child.id,
+            'name': child.name,
+            'age': child.age,
+            'health_status': child.health_status,
+            'priority': child.priority,
+            'urgency_score': child.urgency_score,
+            'notes': child.notes[:100] + '...' if child.notes and len(child.notes) > 100 else child.notes,
+            'lat': child.current_lat, # ADDED for map marker
+            'lon': child.current_lon  # ADDED for map marker
+        })
+
+    resources_for_crisis = []
+    for route in crisis.resource_routes_targeted.all(): 
+        resources_for_crisis.append({
+            'id': route.id,
+            'resource_type': route.resource_type,
+            'supply_quantity': route.supply_quantity,
+            'status': route.status,
+            'assigned_agent': route.assigned_agent.username if route.assigned_agent else 'N/A',
+            'origin_lat': route.origin_lat,       # ADDED for map route
+            'origin_lon': route.origin_lon,       # ADDED for map route
+            'destination_lat': route.destination_lat, # ADDED for map route
+            'destination_lon': route.destination_lon  # ADDED for map route
+        })
+    
+    involved_agent_ids = {route.assigned_agent_id for route in crisis.resource_routes_targeted.all() if route.assigned_agent_id}
+
+    crisis_data = {
+        'id': crisis.id,
+        'name': crisis.name,
+        'description': crisis.description,
+        'status': crisis.status,
+        'start_date': crisis.start_date.strftime('%Y-%m-%d'),
+        'location_lat': crisis.location_lat,
+        'location_lon': crisis.location_lon,
+        'children_assigned_count': crisis.children_assigned.count(),
+        'resources_targeted_count': crisis.resource_routes_targeted.count(),
+        'agents_involved_count': len(involved_agent_ids),
+        'children': children_in_crisis,
+        'resources': resources_for_crisis
+    }
+    return jsonify(crisis_data)
+
+# New Route for Donor Insights (for Mission Manager)
+@app.route('/donor_insights')
+@login_required
+@role_required('mission_manager')
+def donor_insights():
+    # Fetch all users with the 'donor' role
+    donors = User.query.filter_by(role='donor').all()
+    
+    # Fetch all donations to process insights
+    all_donations_query = Donation.query.order_by(Donation.timestamp.asc()).all()
+
+    # --- Prepare data for charts --- 
+    # 1. Overall Donation Trend (similar to project_detail, but for all donations)
+    overall_donation_timestamps = []
+    overall_cumulative_donations = []
+    current_overall_cumulative = Decimal('0.00')
+    for don in all_donations_query:
+        overall_donation_timestamps.append(don.timestamp.strftime('%Y-%m-%d'))
+        current_overall_cumulative += Decimal(str(don.donation_size))
+        overall_cumulative_donations.append(float(current_overall_cumulative))
+
+    # 2. Donations by Project (Overall)
+    donations_by_project_overall = {}
+    for don in all_donations_query:
+        if don.project_id and don.project:
+            project_name = don.project.name
+            donations_by_project_overall[project_name] = donations_by_project_overall.get(project_name, Decimal('0.00')) + Decimal(str(don.donation_size))
+        elif not don.project_id:
+             donations_by_project_overall["General Aid (Unassigned)"] = donations_by_project_overall.get("General Aid (Unassigned)", Decimal('0.00')) + Decimal(str(don.donation_size))
+
+    overall_project_labels = list(donations_by_project_overall.keys())
+    overall_project_values = [float(val) for val in donations_by_project_overall.values()]
+
+    # 3. Top Donors (by total amount donated)
+    top_donors_data = {}
+    for donor_user in donors:
+        donor_total = db.session.query(func.sum(Donation.donation_size)).filter_by(donor_id=donor_user.id).scalar()
+        if donor_total and Decimal(str(donor_total)) > 0:
+            top_donors_data[donor_user.username] = Decimal(str(donor_total))
+    
+    # Sort donors by amount and get top N (e.g., top 10)
+    sorted_top_donors = sorted(top_donors_data.items(), key=lambda item: item[1], reverse=True)[:10]
+    top_donor_labels = [item[0] for item in sorted_top_donors]
+    top_donor_values = [float(item[1]) for item in sorted_top_donors]
+
+    # --- Prepare data for donor table ---
+    donor_table_data = []
+    for d_user in donors:
+        donations = Donation.query.filter_by(donor_id=d_user.id).all()
+        total_donated = sum(Decimal(str(d.donation_size)) for d in donations)
+        num_donations = len(donations)
+        last_donation_date = max(d.timestamp for d in donations) if donations else None
+        donor_table_data.append({
+            'username': d_user.username,
+            'total_donated': float(total_donated),
+            'num_donations': num_donations,
+            'last_donation_date': last_donation_date.strftime('%Y-%m-%d') if last_donation_date else 'N/A'
+        })
+
+    return render_template('donor_insights.html',
+                           donors=donor_table_data,
+                           overall_donation_timestamps=overall_donation_timestamps,
+                           overall_cumulative_donations=overall_cumulative_donations,
+                           overall_project_labels=overall_project_labels,
+                           overall_project_values=overall_project_values,
+                           top_donor_labels=top_donor_labels,
+                           top_donor_values=top_donor_values
+                           )
 
 @app.route('/qr', methods=['GET', 'POST'])
 @login_required
