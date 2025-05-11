@@ -1,270 +1,177 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="dashboard-container">
+<div class="dashboard-container chat-page-container">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-comments me-2"></i>Mission Chat</h2>
-    <div class="text-muted"><i class="fas fa-user-circle me-2"></i>{{ current_user.username }}</div>
+    <div class="current-user-display-header">
+        <i class="fas fa-user-circle me-2"></i>
+        <span>{{ current_user.username }}</span>
+        <small class="text-muted ms-1">({{ current_user.role.replace('_', ' ') | title }})</small>
+    </div>
   </div>
 
   <div class="row g-4">
     <!-- Chat Sidebar -->
-    <div class="col-lg-3">
+    <div class="col-lg-3 chat-sidebar">
       <div class="card mb-4">
         <div class="card-header">
           <h5 class="mb-0">Chat Channels</h5>
         </div>
         <div class="list-group list-group-flush" id="chat-channels">
+          <!-- Channel items -->
           <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center active" data-channel="general">
-            <div>
-              <i class="fas fa-globe-africa me-2"></i>
-              <span>General</span>
-            </div>
+            <div><i class="fas fa-globe-africa"></i><span>General</span></div>
             <span class="badge bg-primary rounded-pill">4</span>
           </button>
           <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-channel="emergencies">
-            <div>
-              <i class="fas fa-exclamation-triangle me-2"></i>
-              <span>Emergencies</span>
-            </div>
+            <div><i class="fas fa-exclamation-triangle"></i><span>Emergencies</span></div>
             <span class="badge bg-danger rounded-pill">2</span>
           </button>
-          <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-channel="donations">
-            <div>
-              <i class="fas fa-hand-holding-heart me-2"></i>
-              <span>Donations</span>
-            </div>
-            <span class="badge bg-success rounded-pill">1</span>
-          </button>
-          <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-channel="field-reports">
-            <div>
-              <i class="fas fa-clipboard-list me-2"></i>
-              <span>Field Reports</span>
-            </div>
-            <span class="badge bg-secondary rounded-pill">0</span>
-          </button>
+          <!-- Add other channels similarly -->
         </div>
       </div>
 
-      <div class="card">
+      <div class="card online-users">
         <div class="card-header">
           <h5 class="mb-0">Online Users</h5>
         </div>
         <div class="card-body p-0">
-          <ul class="list-group list-group-flush" id="online-users">
+          <ul class="list-group list-group-flush" id="online-users-list">
+            <!-- Example Online User (to be dynamically populated) -->
             <li class="list-group-item d-flex align-items-center">
-              <div class="position-relative me-2">
-                <i class="fas fa-user-circle fa-2x text-primary"></i>
-                <span class="position-absolute bottom-0 end-0 translate-middle p-1 bg-success rounded-circle">
-                  <span class="visually-hidden">Online</span>
-                </span>
+              <div class="position-relative me-2 avatar">
+                <i class="fas fa-user-circle"></i> 
+                <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-light rounded-circle"></span>
               </div>
               <div>
                 <div class="fw-medium">Sarah Johnson</div>
                 <div class="small text-muted">Field Agent</div>
               </div>
             </li>
-            <li class="list-group-item d-flex align-items-center">
-              <div class="position-relative me-2">
-                <i class="fas fa-user-circle fa-2x text-primary"></i>
-                <span class="position-absolute bottom-0 end-0 translate-middle p-1 bg-success rounded-circle">
-                  <span class="visually-hidden">Online</span>
-                </span>
-              </div>
-              <div>
-                <div class="fw-medium">David Williams</div>
-                <div class="small text-muted">Donor</div>
-              </div>
-            </li>
-            <li class="list-group-item d-flex align-items-center">
-              <div class="position-relative me-2">
-                <i class="fas fa-user-circle fa-2x text-primary"></i>
-                <span class="position-absolute bottom-0 end-0 translate-middle p-1 bg-success rounded-circle">
-                  <span class="visually-hidden">Online</span>
-                </span>
-              </div>
-              <div>
-                <div class="fw-medium">Maria Rodriguez</div>
-                <div class="small text-muted">Mission Manager</div>
-              </div>
-            </li>
-            <li class="list-group-item d-flex align-items-center">
-              <div class="position-relative me-2">
-                <i class="fas fa-user-circle fa-2x text-primary"></i>
-                <span class="position-absolute bottom-0 end-0 translate-middle p-1 bg-secondary rounded-circle">
-                  <span class="visually-hidden">Offline</span>
-                </span>
-              </div>
-              <div>
-                <div class="fw-medium">Robert Chen</div>
-                <div class="small text-muted">Child Care</div>
-              </div>
-            </li>
+            <!-- Add other users -->
           </ul>
         </div>
       </div>
     </div>
 
     <!-- Main Chat Area -->
-    <div class="col-lg-9">
+    <div class="col-lg-9 chat-area">
       <div class="card h-100 d-flex flex-column">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center">
           <div>
-            <h5 class="mb-0" id="channel-name">General</h5>
-            <div class="text-muted small"><span id="online-count">4</span> users online</div>
+            <h5 class="mb-0" id="current-channel-name">General</h5>
+            <div class="text-muted small"><span id="channel-online-count">4</span> users online</div>
           </div>
           <div>
-            <button class="btn btn-sm btn-outline-secondary">
-              <i class="fas fa-search me-1"></i>Search
-            </button>
-            <button class="btn btn-sm btn-outline-secondary ms-2">
-              <i class="fas fa-cog me-1"></i>Settings
-            </button>
+            <button class="btn btn-sm btn-outline-secondary"><i class="fas fa-search me-1"></i>Search</button>
+            <button class="btn btn-sm btn-outline-secondary ms-2"><i class="fas fa-cog me-1"></i>Settings</button>
           </div>
         </div>
 
-        <!-- Chat Messages Area -->
-        <div class="card-body overflow-auto" id="chat-messages" style="max-height: 500px;">
-          <div class="d-flex justify-content-center mb-3">
-            <div class="badge bg-light text-dark py-2 px-3">Today, 10:45 AM</div>
-          </div>
+        <div class="card-body overflow-auto flex-grow-1" id="chat-messages">
+          <!-- Date Separator -->
+          <div class="system-message my-3"><span class="badge">Today, 10:45 AM</span></div>
           
-          <!-- System Message -->
-          <div class="text-center mb-3 small text-muted">Sarah Johnson joined the channel</div>
+          <!-- System Message Example -->
+          <div class="system-message">Sarah Johnson joined the channel</div>
           
-          <!-- Message from others -->
-          <div class="d-flex mb-3">
-            <div class="flex-shrink-0 me-2">
-              <i class="fas fa-user-circle fa-2x text-primary"></i>
+          <!-- Message from others: Example Structure -->
+          <div class="message-item mb-3">
+            <div class="avatar">
+              <i class="fas fa-user-circle"></i> <!-- Or img tag -->
             </div>
-            <div>
-              <div class="bg-light rounded p-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="fw-bold">Sarah Johnson</span>
-                  <small class="text-muted">10:46 AM</small>
-                </div>
-                <p class="mb-0">Hello everyone! I'm at the distribution center in Johannesburg. We've received the medical supplies and are preparing for distribution.</p>
+            <div class="message-content-wrapper">
+              <div class="message-bubble">
+                <p>Hello everyone! I'm at the distribution center in Johannesburg. We've received the medical supplies and are preparing for distribution.</p>
               </div>
-              <div class="d-flex mt-1 ms-2">
-                <button class="btn btn-sm text-muted">
-                  <i class="far fa-thumbs-up me-1"></i>3
-                </button>
-                <button class="btn btn-sm text-muted">
-                  <i class="far fa-comment me-1"></i>Reply
-                </button>
+              <div class="message-meta">
+                <span class="sender-name">Sarah Johnson</span>
+                <span class="timestamp">10:46 AM</span>
+              </div>
+              <div class="message-actions d-flex">
+                <button class="btn btn-sm text-muted"><i class="far fa-thumbs-up me-1"></i>3</button>
+                <button class="btn btn-sm text-muted"><i class="far fa-comment me-1"></i>Reply</button>
               </div>
             </div>
           </div>
           
-          <!-- Message from current user -->
-          <div class="d-flex justify-content-end mb-3">
-            <div class="text-end">
-              <div class="bg-primary text-white rounded p-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <small class="text-white-50">10:48 AM</small>
-                  <span class="fw-bold">You</span>
-                </div>
-                <p class="mb-0">Great! How many children are currently registered at that location? Should we prepare more supplies?</p>
-              </div>
-              <div class="d-flex justify-content-end mt-1 me-2">
-                <button class="btn btn-sm text-muted">
-                  <i class="fas fa-pen me-1"></i>Edit
-                </button>
-                <button class="btn btn-sm text-muted">
-                  <i class="fas fa-trash me-1"></i>Delete
-                </button>
-              </div>
+          <!-- Message from current user: Example Structure -->
+          <div class="message-item current-user mb-3">
+            <div class="avatar">
+              <i class="fas fa-user-circle"></i> <!-- Or img tag for current_user -->
             </div>
-          </div>
-          
-          <!-- Another message from others -->
-          <div class="d-flex mb-3">
-            <div class="flex-shrink-0 me-2">
-              <i class="fas fa-user-circle fa-2x text-primary"></i>
-            </div>
-            <div>
-              <div class="bg-light rounded p-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="fw-bold">Maria Rodriguez</span>
-                  <small class="text-muted">10:50 AM</small>
-                </div>
-                <p class="mb-0">According to our database, we have 42 children registered at the Johannesburg center. The supplies we sent should be sufficient, but I've allocated an additional 15% buffer.</p>
+            <div class="message-content-wrapper">
+              <div class="message-bubble">
+                <p>Great! How many children are currently registered at that location? Should we prepare more supplies?</p>
               </div>
-              <div class="d-flex mt-1 ms-2">
-                <button class="btn btn-sm text-muted">
-                  <i class="far fa-thumbs-up me-1"></i>5
-                </button>
-                <button class="btn btn-sm text-muted">
-                  <i class="far fa-comment me-1"></i>Reply
-                </button>
+              <div class="message-meta">
+                <span class="timestamp">10:48 AM</span>
+                 <span class="sender-name">You</span>
+              </div>
+              <div class="message-actions d-flex">
+                <button class="btn btn-sm text-muted"><i class="fas fa-pen me-1"></i>Edit</button>
+                <button class="btn btn-sm text-muted"><i class="fas fa-trash me-1"></i>Delete</button>
               </div>
             </div>
           </div>
-          
-          <!-- File Attachment -->
-          <div class="d-flex mb-3">
-            <div class="flex-shrink-0 me-2">
-              <i class="fas fa-user-circle fa-2x text-primary"></i>
+
+          <!-- More messages here -->
+          <div class="message-item mb-3">
+            <div class="avatar"><i class="fas fa-user-circle"></i></div>
+            <div class="message-content-wrapper">
+              <div class="message-bubble">
+                <p>According to our database, we have 42 children registered at the Johannesburg center. The supplies we sent should be sufficient, but I've allocated an additional 15% buffer.</p>
+              </div>
+              <div class="message-meta"><span class="sender-name">Maria Rodriguez</span> <span class="timestamp">10:50 AM</span></div>
+              <div class="message-actions d-flex"><button class="btn btn-sm text-muted"><i class="far fa-thumbs-up me-1"></i>5</button><button class="btn btn-sm text-muted"><i class="far fa-comment me-1"></i>Reply</button></div>
             </div>
-            <div>
-              <div class="bg-light rounded p-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="fw-bold">David Williams</span>
-                  <small class="text-muted">10:55 AM</small>
-                </div>
-                <p class="mb-2">I've just transferred additional funds to support the Johannesburg center. Here's the confirmation:</p>
-                <div class="card bg-white p-2 mb-0">
-                  <div class="d-flex align-items-center">
-                    <i class="fas fa-file-pdf text-danger fa-2x me-2"></i>
-                    <div>
-                      <div class="fw-medium">Donation_Confirmation_JHB.pdf</div>
-                      <div class="small text-muted">245 KB · 2 minutes ago</div>
+          </div>
+
+          <!-- File Attachment Example -->
+          <div class="message-item mb-3">
+            <div class="avatar"><i class="fas fa-user-circle"></i></div>
+            <div class="message-content-wrapper">
+                <div class="message-bubble">
+                    <div class="message-file-attachment">
+                        <div class="card p-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-file-pdf fa-2x me-2"></i>
+                                <div>
+                                    <div class="fw-medium">Donation_Confirmation_JHB.pdf</div>
+                                    <div class="small text-muted">245 KB</div>
+                                </div>
+                                <button class="btn btn-sm btn-light ms-auto"><i class="fas fa-download"></i></button>
+                            </div>
+                        </div>
                     </div>
-                    <button class="btn btn-sm btn-light ms-auto">
-                      <i class="fas fa-download"></i>
-                    </button>
-                  </div>
                 </div>
-              </div>
-              <div class="d-flex mt-1 ms-2">
-                <button class="btn btn-sm text-muted">
-                  <i class="far fa-thumbs-up me-1"></i>2
-                </button>
-                <button class="btn btn-sm text-muted">
-                  <i class="far fa-comment me-1"></i>Reply
-                </button>
-              </div>
+                <div class="message-meta"><span class="sender-name">David Williams</span> <span class="timestamp">10:55 AM</span></div>
+                <div class="message-actions d-flex"><button class="btn btn-sm text-muted"><i class="far fa-thumbs-up me-1"></i>2</button><button class="btn btn-sm text-muted"><i class="far fa-comment me-1"></i>Reply</button></div>
             </div>
           </div>
           
-          <!-- Typing indicator -->
-          <div class="d-flex mb-3">
-            <div class="flex-shrink-0 me-2">
-              <i class="fas fa-user-circle fa-2x text-primary"></i>
-            </div>
-            <div class="bg-light rounded p-2 px-3">
-              <span class="typing-indicator">
-                <span class="dot"></span>
-                <span class="dot"></span>
-                <span class="dot"></span>
-              </span>
+          <!-- Typing Indicator (Structure for CSS) -->
+          <div class="message-item typing-indicator-container mb-3" style="display: none;"> <!-- Hide by default -->
+            <div class="avatar"><i class="fas fa-user-circle"></i></div>
+            <div class="message-content-wrapper">
+                <div class="message-bubble typing-bubble">
+                    <span class="typing-indicator">
+                        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    </span>
+                </div>
             </div>
           </div>
+
         </div>
 
         <!-- Chat Input Area -->
-        <div class="card-footer bg-white">
+        <div class="card-footer chat-input-area">
           <form id="message-form">
             <div class="input-group">
-              <button type="button" class="btn btn-outline-secondary">
-                <i class="fas fa-paperclip"></i>
-              </button>
-              <input type="text" class="form-control" placeholder="Type your message..." id="message-input">
-              <button type="button" class="btn btn-outline-secondary">
-                <i class="far fa-smile"></i>
-              </button>
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-paper-plane me-1"></i>Send
-              </button>
+              <button type="button" class="btn btn-outline-secondary" title="Attach file"><i class="fas fa-paperclip"></i></button>
+              <input type="text" class="form-control" placeholder="Type your message..." id="message-input" autocomplete="off">
+              <button type="button" class="btn btn-outline-secondary" title="Emoji"><i class="far fa-smile"></i></button>
+              <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-1"></i>Send</button>
             </div>
           </form>
         </div>
@@ -273,71 +180,75 @@
   </div>
 </div>
 
-<style>
-.typing-indicator {
-  display: flex;
-  align-items: center;
-}
+{% endblock %}
 
-.typing-indicator .dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #aaa;
-  animation: typing 1.3s infinite ease-in-out;
-  margin-right: 4px;
-}
-
-.typing-indicator .dot:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.typing-indicator .dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing-indicator .dot:nth-child(3) {
-  animation-delay: 0.4s;
-  margin-right: 0;
-}
-
-@keyframes typing {
-  0%, 60%, 100% {
-    transform: translateY(0);
-  }
-  30% {
-    transform: translateY(-4px);
-  }
-}
-</style>
-
+{% block scripts %}
+{{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Channel switching
-  document.querySelectorAll('[data-channel]').forEach(button => {
+  // Channel switching (existing JS - might need review based on new structure)
+  document.querySelectorAll('#chat-channels .list-group-item-action').forEach(button => {
     button.addEventListener('click', function() {
-      // Remove active class from all buttons
-      document.querySelectorAll('[data-channel]').forEach(btn => {
-        btn.classList.remove('active');
-      });
-      // Add active class to clicked button
+      document.querySelectorAll('#chat-channels .list-group-item-action').forEach(btn => btn.classList.remove('active'));
       this.classList.add('active');
-      // Update channel name
-      document.getElementById('channel-name').textContent = this.querySelector('span').textContent;
+      document.getElementById('current-channel-name').textContent = this.querySelector('span').textContent;
+      // Add logic here to fetch/display messages for the selected channel via SocketIO
     });
   });
 
-  // Message form submission
-  document.getElementById('message-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const messageInput = document.getElementById('message-input');
-    if (messageInput.value.trim() !== '') {
-      // In a real app, this would send the message to the server
-      // For now, we'll just clear the input
-      messageInput.value = '';
-    }
-  });
-  });
+  // Message form submission (existing JS - good)
+  const messageForm = document.getElementById('message-form');
+  const messageInput = document.getElementById('message-input');
+  const chatMessages = document.getElementById('chat-messages'); // To scroll down
+
+  if(messageForm){
+      messageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (messageInput.value.trim() !== '') {
+          // TODO: Send message via SocketIO
+          console.log("Sending: ", messageInput.value);
+          // Example: appendCurrentUserMessage(messageInput.value); // You'll need a function to render this
+          messageInput.value = '';
+          chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+        }
+      });
+  }
+  // TODO: Add SocketIO event listeners here to receive messages, update online users, typing indicators etc.
+  // Example function to append a new message (you'll need to adapt this based on actual data from SocketIO)
+  function appendMessage(sender, text, time, isCurrentUser) {
+      const messageItem = document.createElement('div');
+      messageItem.classList.add('message-item', 'mb-3');
+      if (isCurrentUser) {
+          messageItem.classList.add('current-user');
+      }
+
+      messageItem.innerHTML = `
+          <div class="avatar">
+              <i class="fas fa-user-circle"></i>
+          </div>
+          <div class="message-content-wrapper">
+              <div class="message-bubble">
+                  <p>${text}</p> 
+              </div>
+              <div class="message-meta">
+                  ${!isCurrentUser ? `<span class="sender-name">${sender}</span>` : ''}
+                  <span class="timestamp">${time}</span>
+                  ${isCurrentUser ? `<span class="sender-name ms-1">You</span>` : ''}
+              </div>
+              <div class="message-actions d-flex">
+                  <button class="btn btn-sm text-muted"><i class="far fa-thumbs-up me-1"></i></button>
+                  <button class="btn btn-sm text-muted"><i class="far fa-comment me-1"></i></button>
+              </div>
+          </div>
+      `;
+      chatMessages.appendChild(messageItem);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Example Usage (remove these in production)
+  // appendMessage("Test User", "This is a test message from another user.", "11:00 AM", false);
+  // appendMessage("current_user", "This is my own test message!", "11:01 AM", true);
+
+});
 </script>
 {% endblock %}

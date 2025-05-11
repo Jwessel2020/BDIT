@@ -50,11 +50,11 @@
   <!-- New Card for Donor Insights Link -->
   <div class="row mb-4">
     <div class="col-12">
-        <div class="card">
+        <div class="card action-card">
             <div class="card-body text-center">
                 <h5 class="card-title"><i class="fas fa-donate me-2"></i>View Donor Insights</h5>
                 <p class="card-text text-muted">Analyze donor contributions and overall fundraising efforts.</p>
-                <a href="{{ url_for('donor_insights') }}" class="btn btn-info">
+                <a href="{{ url_for('donor_insights') }}" class="btn btn-primary">
                     <i class="fas fa-chart-bar me-2"></i>Go to Donor Insights
                 </a>
             </div>
@@ -83,7 +83,7 @@
           <div class="card-body d-flex flex-column">
             <p class="card-text text-muted small flex-grow-1">{{ project.description | truncate(120) }}</p>
             
-            <div class="mb-3">
+            <div class="goal-section mb-3">
               <strong><i class="fas fa-bullseye me-1"></i>Goal:</strong> 
               <span class="text-muted">{{ project.goal_description | truncate(70) }}</span>
               <div class="progress mt-1" style="height: 10px;">
@@ -100,7 +100,7 @@
               </div>
             </div>
 
-            <div class="row small text-muted mb-3">
+            <div class="row small text-muted project-meta-info mb-3">
               <div class="col">
                 <strong><i class="fas fa-dollar-sign me-1"></i>Budget:</strong> ${{ "{:,.0f}".format(project.budget) if project.budget else 'N/A' }}
               </div>
@@ -147,22 +147,21 @@ if (typeof Plotly !== 'undefined') {
             values: statusValues,
             labels: statusLabels,
             type: 'pie',
-            hole: .4, // for a donut chart look
+            hole: .4, 
             textinfo: "label+percent",
             textposition: 'inside',
             marker: {
-                colors: ['#3498db', '#2ecc71', '#95a5a6', '#f39c12', '#e74c3c'] // Blue, Green, Grey, Orange, Red
+                colors: ['#005A9C', '#4CAF50', '#6c757d', '#FFC107', '#D32F2F'] // Updated to new palette
             }
         }];
-
         var pieLayout = {
             height: 350,
-            margin: {"t": 20, "b": 20, "l": 20, "r": 20},
+            margin: {"t": 30, "b": 30, "l": 30, "r": 30}, // Adjusted for potentially longer labels
             showlegend: true,
-            legend: {x: 1, y: 0.5},
+            legend: {orientation: "v", x: 1.05, xanchor: "left", y: 0.5, yanchor: "middle" }, // Vertical legend on the side
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+            font: { color: 'var(--neutral-text-primary)', family: 'Inter, Segoe UI, system-ui, sans-serif' }
         };
         var config = {responsive: true, displaylogo: false};
         Plotly.newPlot('projectStatusPieChart', pieData, pieLayout, config);
@@ -177,17 +176,19 @@ if (typeof Plotly !== 'undefined') {
             y: financialValues,
             type: 'bar',
             marker: {
-                color: ['#2c3e50', '#4361ee'] // Dark grey/blue for budget, Primary blue for donations
-            }
+                color: ['#003D6B', '#005A9C'] // Updated to new palette (Dark Brand, Primary Brand)
+            },
+            width: [0.5, 0.5] // Adjust bar width
         }];
-
         var barLayout = {
             height: 350,
-            margin: {"t": 30, "b": 50, "l": 60, "r": 20},
-            yaxis: { title: 'Amount ($)', tickprefix: '$' },
+            margin: {"t": 30, "b": 50, "l": 70, "r": 20}, // Increased left margin for y-axis title
+            yaxis: { title: 'Amount ($)', tickprefix: '$', titlefont: {size: 14}, tickfont: {size: 12} },
+            xaxis: {tickfont: {size: 12}} ,
+            bargap: 0.2, // Gap between bars of the same trace
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#2c3e50', family: 'Segoe UI, system-ui, -apple-system, sans-serif' }
+            font: { color: 'var(--neutral-text-primary)', family: 'Inter, Segoe UI, system-ui, sans-serif' }
         };
         Plotly.newPlot('portfolioFinancialsBarChart', barData, barLayout, config);
     }

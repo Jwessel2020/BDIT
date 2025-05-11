@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <title>NGO Operations Platform</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Google Fonts: Inter and Lexend Deca -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend+Deca:wght@400;600;700&display=swap" rel="stylesheet">
+
   <!-- Bootstrap CSS -->
   <link
     rel="stylesheet"
@@ -41,67 +47,50 @@
 
       <!-- Navbar Links -->
       <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
+        <ul class="navbar-nav ms-auto align-items-center">
           {% if current_user.is_authenticated %}
-            {% if current_user.role in ['field_agent', 'mission_manager'] %}
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('field_agent') }}">
-                <i class="fas fa-map-marker-alt me-1"></i>Field Agent
-              </a>
-            </li>
+            {# Role-specific links #}
+            {% if current_user.role == 'field_agent' %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('field_agent') }}"><i class="fas fa-map-marker-alt me-2"></i>Field Agent</a></li>
+            {% endif %}
+            {% if current_user.role == 'donor' %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('donor') }}"><i class="fas fa-hand-holding-usd me-2"></i>Donor</a></li>
+            {% endif %}
+            {% if current_user.role == 'child_care' %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('child_care') }}"><i class="fas fa-child me-2"></i>Child Care</a></li>
             {% endif %}
 
-            {% if current_user.role in ['donor', 'mission_manager'] %}
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('donor') }}">
-                <i class="fas fa-hand-holding-usd me-1"></i>Donor
-              </a>
-            </li>
-            {% endif %}
+            {# Common links for authenticated users #}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('map_view') }}"><i class="fas fa-globe me-2"></i>Map</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('messaging.chat') }}"><i class="fas fa-comments me-2"></i>Chat</a></li>
 
-            {% if current_user.role in ['child_care', 'mission_manager'] %}
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('child_care') }}">
-                <i class="fas fa-child me-1"></i>Child Care
-              </a>
-            </li>
-            {% endif %}
-
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('map_view') }}">
-                <i class="fas fa-globe me-1"></i>Map
-              </a>
-            </li>
-
+            {# Mission Manager specific links #}
             {% if current_user.role == 'mission_manager' %}
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('manager_dashboard') }}">
-                <i class="fas fa-chart-line me-1"></i>Manager Dashboard
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('crisis_dashboard') }}">
-                <i class="fas fa-bullhorn me-1"></i>Crisis Response
-              </a>
-            </li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('manager_dashboard') }}"><i class="fas fa-chart-line me-2"></i>Manager Hub</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('crisis_dashboard') }}"><i class="fas fa-bullhorn me-2"></i>Crisis Response</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('donor_insights') }}"><i class="fas fa-users-cog me-2"></i>Donor Insights</a></li>
+            {# Temporarily comment out these view links for layout testing #}
+            {# <li class="nav-item"><a class="nav-link" href="{{ url_for('field_agent') }}"><i class="fas fa-binoculars me-2"></i>Agent View</a></li> #}
+            {# <li class="nav-item"><a class="nav-link" href="{{ url_for('donor') }}"><i class="fas fa-gift me-2"></i>Donor View</a></li> #}
+            {# <li class="nav-item"><a class="nav-link" href="{{ url_for('child_care') }}"><i class="fas fa-baby-carriage me-2"></i>Child Care View</a></li> #}
             {% endif %}
 
+            <li class="nav-item ms-lg-3">
+                <div class="nav-user-info">
+                    <i class="fas fa-user-circle nav-user-icon"></i>
+                    <span class="nav-username">{{ current_user.username }}</span>
+                    <small class="nav-user-role">({{ current_user.role.replace('_', ' ') | title }})</small>
+                </div>
+            </li>
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('logout') }}">
-                <i class="fas fa-sign-out-alt me-1"></i>Logout
+              <a class="nav-link nav-link-logout" href="{{ url_for('logout') }}">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
               </a>
             </li>
           {% else %}
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('login') }}">
-                <i class="fas fa-sign-in-alt me-1"></i>Login
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('register') }}">
-                <i class="fas fa-user-plus me-1"></i>Register
-              </a>
-            </li>
+            {# Login/Register for unauthenticated users #}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt me-2"></i>Login</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}"><i class="fas fa-user-plus me-2"></i>Register</a></li>
           {% endif %}
         </ul>
       </div>
